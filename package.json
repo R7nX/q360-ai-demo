@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "tsx scripts/seed-mock-db.ts"
+    "seed": "tsx scripts/seed-mock-db.ts",
+    "tables": "tsx scripts/seed-mock-db.ts list"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
