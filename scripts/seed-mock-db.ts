@@ -41,7 +41,9 @@ const TABLE  = process.argv[2]
 const COUNT  = parseInt(process.argv[3] ?? '20', 10)
 
 if (!TABLE) {
-  console.error('Usage: npx tsx scripts/seed-mock-db.ts <tablename> [count]')
+  console.error('Usage:')
+  console.error('  npx tsx scripts/seed-mock-db.ts list              — list all available Q360 tables')
+  console.error('  npx tsx scripts/seed-mock-db.ts <tablename> [count] — seed a table')
   process.exit(1)
 }
 
@@ -56,6 +58,11 @@ if (!BASE_URL || !USERNAME || !PASSWORD) {
   process.exit(1)
 }
 
+console.log(` Base URL : ${BASE_URL}`)
+console.log(` API User : ${USERNAME}`)
+console.log(` Auth     : Basic ${Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64').substring(0, 10)}...`)
+console.log()
+
 const AUTH_HEADER = 'Basic ' + Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64')
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -69,7 +76,7 @@ interface Q360Column {
 // ─── Q360 Schema Fetching ───────────────────────────────────────────────────
 
 async function fetchColumns(table: string): Promise<Q360Column[]> {
-  const url = `${BASE_URL}/api/DataDict?_a=columnList&_t=${table}`
+  const url = `${BASE_URL}/api/DataDict?_a=list&tablename=${table}`
   const res = await fetch(url, { headers: { Authorization: AUTH_HEADER } })
 
   if (!res.ok) {
@@ -78,11 +85,8 @@ async function fetchColumns(table: string): Promise<Q360Column[]> {
 
   const json = await res.json()
 
-  // Q360 API wraps responses — handle both flat arrays and nested payload shapes
-  const raw = json.payload ?? json
-  const columns: unknown[] = Array.isArray(raw)
-    ? raw
-    : (raw.columns ?? raw.data ?? raw.records ?? [])
+  // Q360 response shape: { payload: { result: [ { field_name, sqltype, mandatoryflag, ... } ] } }
+  const columns: unknown[] = json?.payload?.result ?? []
 
   if (!columns.length) {
     throw new Error(
@@ -91,11 +95,10 @@ async function fetchColumns(table: string): Promise<Q360Column[]> {
     )
   }
 
-  // Normalize — the API may return PascalCase or lowercase key names
   return columns.map((col: any) => ({
-    name:     col.columnname ?? col.ColumnName ?? col.name     ?? col.Name     ?? '',
-    type:     col.datatype   ?? col.DataType   ?? col.type     ?? col.Type     ?? 'varchar',
-    nullable: col.nullable ?? col.Nullable ?? (col.required !== undefined ? !col.required : true),
+    name:     col.field_name ?? '',
+    type:     col.sqltype    ?? 'VARCHAR',
+    nullable: col.mandatoryflag !== 'Y',
   })).filter(c => c.name.length > 0)
 }
 
@@ -209,7 +212,34 @@ function generateValue(col: Q360Column): string | number | null {
 
 // ─── Main ──────────────────────────────────────────────────────────────────
 
+async function listTables() {
+  const url = `${BASE_URL}/api/DataDict?_a=list`
+  const res = await fetch(url, { headers: { Authorization: AUTH_HEADER } })
+  if (!res.ok) throw new Error(`Q360 API returned ${res.status} ${res.statusText}`)
+  const json = await res.json()
+  const tables: unknown[] = json?.payload?.result ?? []
+  if (!tables.length) throw new Error('No tables returned — check your API credentials.')
+  console.log(`\n Available Q360 tables (${tables.length}):\n`)
+  for (const t of tables) {
+    const name = typeof t === 'string' ? t : (t as any).table_dbf ?? (t as any).tablename ?? (t as any).name ?? JSON.stringify(t)
+    console.log(`   ${name}`)
+  }
+  console.log()
+}
+
 async function main() {
+  // Special command: list available tables
+  if (TABLE === 'list') {
+    console.log('\n Fetching table list from Q360...')
+    try {
+      await listTables()
+    } catch (err) {
+      console.error(' Failed to fetch table list:', err)
+      process.exit(1)
+    }
+    return
+  }
+
   console.log(`\n Fetching schema for table "${TABLE}" from Q360...`)
 
   let columns: Q360Column[]
