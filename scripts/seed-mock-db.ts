@@ -95,7 +95,7 @@ async function fetchColumns(table: string): Promise<Q360Column[]> {
   return columns.map((col: any) => ({
     name:     col.columnname ?? col.ColumnName ?? col.name     ?? col.Name     ?? '',
     type:     col.datatype   ?? col.DataType   ?? col.type     ?? col.Type     ?? 'varchar',
-    nullable: col.nullable   ?? col.Nullable   ?? col.required === false ?? true,
+    nullable: col.nullable ?? col.Nullable ?? (col.required !== undefined ? !col.required : true),
   })).filter(c => c.name.length > 0)
 }
 
