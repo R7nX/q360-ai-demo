@@ -8,7 +8,7 @@
 
 | Property | Value |
 |----------|-------|
-| Base URL | `http://rest.q360.online` |
+| Base URL | `https://rest.q360.online` |
 | Auth | HTTP Basic Authentication |
 | Auth User Type | `Q360API` users only |
 | Content-Type | `multipart/form-data` for write operations |
@@ -53,12 +53,12 @@ The API has four groups of endpoints:
 **Purpose:** Discover all available tables and views.
 
 ```
-GET {{base_url}}/api/DataDict?_a=tableList
+GET {{base_url}}/api/DataDict?_a=list
 ```
 
 | Parameter | Required | Value |
 |-----------|----------|-------|
-| `_a` | Yes | `tableList` |
+| `_a` | Yes | `list` |
 
 **Notes:**
 - Returns all tables and views exposed to the API
@@ -73,17 +73,50 @@ GET {{base_url}}/api/DataDict?_a=tableList
 **Purpose:** Get column names, types, and metadata for a specific table.
 
 ```
-GET {{base_url}}/api/DataDict?_a=columnList&_t=<tablename>
+GET {{base_url}}/api/DataDict?_a=list&tablename=<TableName>
 ```
 
 | Parameter | Required | Value |
 |-----------|----------|-------|
-| `_a` | Yes | `columnList` |
-| `_t` | Yes | Table name (e.g., `dispatch`, `customer`) |
+| `_a` | Yes | `list` |
+| `tablename` | Yes | Table name — **must be capitalized** (e.g., `Dispatch`, `Customer`) |
+
+**Response shape:**
+```json
+{
+  "code": 200,
+  "success": true,
+  "payload": {
+    "result": [
+      {
+        "field_name": "ALTPHONE",
+        "field_type": "C",
+        "sqltype": "VARCHAR",
+        "field_len": "30",
+        "field_dec": "0",
+        "mandatoryflag": "N",
+        "p_key": "F",
+        "field_desc": "Altphone",
+        "table_dbf": "DISPATCH"
+      }
+    ]
+  }
+}
+```
+
+**Key response fields:**
+| Field | Meaning |
+|-------|---------|
+| `field_name` | Column name (uppercase) |
+| `sqltype` | SQL type — `VARCHAR`, `INT`, `DECIMAL`, `BIT`, etc. |
+| `field_type` | Q360 type code — `C` (char), `N` (numeric), `D` (date), `L` (logical) |
+| `mandatoryflag` | `Y` = required, `N` = optional |
+| `p_key` | `T` = primary key, `F` = not primary key |
 
 **Notes:**
 - Use this to discover valid column names before building Record requests
 - Helps avoid field name errors in Create/Update payloads
+- Table names are **case-sensitive and capitalized** — use `Dispatch` not `dispatch`
 
 ---
 

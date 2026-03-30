@@ -45,7 +45,7 @@ The Q360 REST API allows CRUD operations on all of these entities. See `API_STRU
 
 | Item | Value |
 |------|-------|
-| Base URL | `http://rest.q360.online` |
+| Base URL | `https://rest.q360.online` |
 | API Docs (live) | `http://rest.q360.online/APIDocumentation` (Beta) |
 | Web Login User | `fshirley` / see `.env.local` |
 | API User | `Q360API_UTAH` / see `.env.local` |
