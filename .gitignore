@@ -1,0 +1,38 @@
+# Next.js
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Mock database (each dev seeds their own)
+mock.db
+mock.db-journal
+
+# Q360 API collection (contains embedded credentials)
+Q360 v25.01.001.api/
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Claude Code local settings (personal, not for repo)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
