@@ -85,11 +85,8 @@ async function fetchColumns(table: string): Promise<Q360Column[]> {
 
   const json = await res.json()
 
-  // Q360 API wraps responses — handle both flat arrays and nested payload shapes
-  const raw = json.payload ?? json
-  const columns: unknown[] = Array.isArray(raw)
-    ? raw
-    : (raw.columns ?? raw.data ?? raw.records ?? [])
+  // Q360 response shape: { payload: { result: [ { field_name, sqltype, mandatoryflag, ... } ] } }
+  const columns: unknown[] = json?.payload?.result ?? []
 
   if (!columns.length) {
     throw new Error(
@@ -98,11 +95,10 @@ async function fetchColumns(table: string): Promise<Q360Column[]> {
     )
   }
 
-  // Normalize — the API may return PascalCase or lowercase key names
   return columns.map((col: any) => ({
-    name:     col.columnname ?? col.ColumnName ?? col.name     ?? col.Name     ?? '',
-    type:     col.datatype   ?? col.DataType   ?? col.type     ?? col.Type     ?? 'varchar',
-    nullable: col.nullable ?? col.Nullable ?? (col.required !== undefined ? !col.required : true),
+    name:     col.field_name ?? '',
+    type:     col.sqltype    ?? 'VARCHAR',
+    nullable: col.mandatoryflag !== 'Y',
   })).filter(c => c.name.length > 0)
 }
 
@@ -221,12 +217,11 @@ async function listTables() {
   const res = await fetch(url, { headers: { Authorization: AUTH_HEADER } })
   if (!res.ok) throw new Error(`Q360 API returned ${res.status} ${res.statusText}`)
   const json = await res.json()
-  const raw = json.payload ?? json
-  const tables: unknown[] = Array.isArray(raw) ? raw : (raw.tables ?? raw.data ?? raw.records ?? [])
+  const tables: unknown[] = json?.payload?.result ?? []
   if (!tables.length) throw new Error('No tables returned — check your API credentials.')
   console.log(`\n Available Q360 tables (${tables.length}):\n`)
   for (const t of tables) {
-    const name = typeof t === 'string' ? t : (t as any).tablename ?? (t as any).TableName ?? (t as any).name ?? JSON.stringify(t)
+    const name = typeof t === 'string' ? t : (t as any).table_dbf ?? (t as any).tablename ?? (t as any).name ?? JSON.stringify(t)
     console.log(`   ${name}`)
   }
   console.log()
