@@ -7,7 +7,7 @@ const anthropic = new Anthropic({
 const MODEL = "claude-sonnet-4-6";
 
 /**
- * Stream a Claude response. Returns a ReadableStream suitable for
+ * Stream an AI response. Returns a ReadableStream suitable for
  * piping directly to the browser via a Next.js API route Response.
  */
 export async function generateStream(
@@ -26,14 +26,8 @@ export async function generateStream(
   return new ReadableStream({
     async start(controller) {
       try {
-        const response = await stream;
-        for await (const event of response) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
+        for await (const text of stream.text_stream) {
+          controller.enqueue(encoder.encode(text));
         }
         controller.close();
       } catch (error) {

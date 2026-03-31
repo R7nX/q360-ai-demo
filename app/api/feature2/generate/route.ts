@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { generateStream } from "@/lib/claudeClient";
+import { generateStream } from "@/lib/agentClient";
 import {
   getDispatchById,
   getCustomerByNo,
