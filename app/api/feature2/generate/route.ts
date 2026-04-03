@@ -36,13 +36,13 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return new Response("Invalid JSON body", { status: 400 });
+    return new Response("Invalid JSON body. Please check your request.", { status: 400 });
   }
 
   const { recordId, automationType, tone } = body;
 
   if (!recordId || !tone) {
-    return new Response("recordId and tone are required", { status: 400 });
+    return new Response("recordId and tone are required. Please check your request.", { status: 400 });
   }
 
   const SUPPORTED_TYPES = ["project-status", "service-closure", "overdue-alert", "new-call-ack"];

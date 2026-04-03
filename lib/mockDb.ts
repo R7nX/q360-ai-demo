@@ -70,11 +70,12 @@ export function getCustomerFromMockDb(customerno: string): Customer | null {
       .get(customerno) as Record<string, unknown> | undefined;
 
     if (!row) return null;
+    const r = lowerKeys(row);
     return {
-      customerno: str(row.customerno) ?? customerno,
-      company: str(row.company) ?? "Unknown",
-      type: str(row.type),
-      status: str(row.status) ?? str(row.statuscode),
+      customerno: str(r.customerno) ?? customerno,
+      company: str(r.company) ?? "Unknown",
+      type: str(r.type),
+      status: str(r.status) ?? str(r.statuscode),
     };
   } finally {
     db.close();
@@ -133,23 +134,28 @@ function str(val: unknown): string | null {
   return String(val);
 }
 
+function lowerKeys(row: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]));
+}
+
 function normalizeDispatch(row: Record<string, unknown>): Dispatch {
+  const r = lowerKeys(row);
   return {
-    dispatchno: str(row.dispatchno) ?? "",
-    callno: str(row.callno) ?? "",
-    customerno: str(row.customerno) ?? "",
-    siteno: str(row.siteno) ?? "",
-    statuscode: str(row.statuscode) ?? str(row.status) ?? "UNKNOWN",
-    problem: str(row.problem) ?? str(row.problemtype),
-    solution: str(row.solution),
-    priority: str(row.priority),
-    techassigned: str(row.techassigned),
-    date: str(row.date) ?? str(row.opendate) ?? str(row.calldate),
-    closedate: str(row.closedate),
-    estfixtime: str(row.estfixtime),
-    callername: str(row.callername),
-    calleremail: str(row.calleremail),
-    callerphone: str(row.callerphone),
-    description: str(row.description),
+    dispatchno: str(r.dispatchno) ?? "",
+    callno: str(r.callno) ?? "",
+    customerno: str(r.customerno) ?? "",
+    siteno: str(r.siteno) ?? "",
+    statuscode: str(r.statuscode) ?? str(r.status) ?? "UNKNOWN",
+    problem: str(r.problem) ?? str(r.problemtype),
+    solution: str(r.solution),
+    priority: str(r.priority),
+    techassigned: str(r.techassigned),
+    date: str(r.date) ?? str(r.opendate) ?? str(r.calldate),
+    closedate: str(r.closedate),
+    estfixtime: str(r.estfixtime),
+    callername: str(r.callername),
+    calleremail: str(r.calleremail),
+    callerphone: str(r.callerphone),
+    description: str(r.description),
   };
 }
