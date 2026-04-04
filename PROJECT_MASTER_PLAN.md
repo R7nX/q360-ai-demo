@@ -76,8 +76,8 @@ We are building a **demo web app** that embeds AI into **Q360** (a field service
 |-------|-----------|-----|
 | **Framework** | **Next.js 16 (TypeScript)** | Frontend + backend in one repo; API Routes keep secrets server-side |
 | **Styling** | **Tailwind CSS 4** | Already installed; utility-first, fast prototyping |
-| **AI Provider** | **Google Gemini (free tier)** | Free API access; `gemini-2.0-flash` for all tools |
-| **AI SDK** | **`@google/generative-ai`** | Official Google AI JS SDK |
+| **AI Provider** | **Google Gemini (free tier)** | Free API access; `gemini-2.5-flash` for all tools |
+| **AI SDK** | **`@google/genai`** | Official Google AI JS SDK (new v1.x API) |
 | **Q360 API** | **REST (Basic Auth)** | Sandbox at `https://rest.q360.online` |
 | **Automation** | **n8n (self-hosted, homelab)** | Visual workflow builder; connects Q360 events → AI → actions; accessible via Cloudflare tunnel |
 | **Database (dev)** | **SQLite via `better-sqlite3`** | Already set up; mock data for offline dev |
@@ -85,7 +85,7 @@ We are building a **demo web app** that embeds AI into **Q360** (a field service
 
 ### Why Gemini Free Tier?
 
-- `gemini-2.0-flash` — fast, free, generous rate limits (15 RPM / 1M TPM)
+- `gemini-2.5-flash` — fast, free, generous rate limits (15 RPM / 1M TPM)
 - No credit card required to get started
 - Good enough for demo-quality text generation (emails, summaries, recommendations)
 - If we hit rate limits during the demo, we can upgrade to the paid tier ($0 → minimal cost)
@@ -99,14 +99,16 @@ GEMINI_API_KEY=your_key_here
 ```
 
 ```typescript
-// lib/ai.ts — usage example
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// lib/agentClient.ts — usage example
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-const result = await model.generateContent("Summarize this dispatch...");
-const text = result.response.text();
+const response = await ai.models.generateContent({
+  model: "gemini-2.5-flash",
+  contents: [{ role: "user", parts: [{ text: "Summarize this dispatch..." }] }],
+});
+const text = response.text ?? "";
 ```
 
 ---
@@ -484,41 +486,55 @@ export async function getInvoices(filters?: { field: string; op: string; value: 
 }
 ```
 
-### 5.2 `lib/ai.ts` — Gemini AI Client
+### 5.2 `lib/agentClient.ts` — Gemini AI Client
 
-Owned by Team 2, used by all teams. Provides a single `generateText()` function.
+Owned by Team 2, used by all teams. Provides `generateJSON()` (non-streaming) and `generateStream()` (streaming).
+
+> **Note:** Uses `@google/genai` (v1.x, new SDK) — NOT the old `@google/generative-ai`. The API shape is different; do not copy examples from the old SDK docs.
 
 ```typescript
-// lib/ai.ts
+// lib/agentClient.ts
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const MODEL = "gemini-2.5-flash";
 
-const DEFAULT_MODEL = "gemini-2.0-flash";
+// Non-streaming — returns full text (use for JSON responses, summaries)
+export async function generateJSON(
+  systemPrompt: string,
+  userPrompt: string,
+  maxOutputTokens = 3000
+): Promise<string> {
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    config: { systemInstruction: systemPrompt, maxOutputTokens },
+  });
+  return response.text ?? "";
+}
 
-export async function generateText(
-  prompt: string,
-  options?: {
-    model?: string;
-    systemInstruction?: string;
-    maxTokens?: number;
-    temperature?: number;
-  }
-): Promise<{ text: string; model: string }> {
-  const model = genAI.getGenerativeModel({
-    model: options?.model ?? DEFAULT_MODEL,
-    systemInstruction: options?.systemInstruction,
-    generationConfig: {
-      maxOutputTokens: options?.maxTokens ?? 2048,
-      temperature: options?.temperature ?? 0.7,
-    },
+// Streaming — returns a ReadableStream<Uint8Array> (use for email drafts, long text)
+export async function generateStream(
+  systemPrompt: string,
+  userPrompt: string
+): Promise<ReadableStream<Uint8Array>> {
+  const response = await ai.models.generateContentStream({
+    model: MODEL,
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    config: { systemInstruction: systemPrompt },
   });
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
-
-  return { text, model: options?.model ?? DEFAULT_MODEL };
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      for await (const chunk of response) {
+        const text = chunk.text ?? "";
+        if (text) controller.enqueue(encoder.encode(text));
+      }
+      controller.close();
+    },
+  });
 }
 ```
 
@@ -909,10 +925,10 @@ import { ActionRecommender } from "@/components/ai/ActionRecommender";
 #### Step 1: Install Gemini SDK & Set Up AI Client (Day 1)
 
 ```bash
-npm install @google/generative-ai
+npm install @google/genai
 ```
 
-Create `lib/ai.ts` (see Section 5.2 above).
+Create `lib/agentClient.ts` (see Section 5.2 above).
 
 #### Step 2: Build the 5 AI API Routes (Days 2-4)
 
@@ -1167,7 +1183,7 @@ Handle these as config/prompt changes — the API contract stays the same.
 ### Team 2 Files Checklist
 
 ```
-[ ] lib/ai.ts                             (Gemini client)
+[ ] lib/agentClient.ts                    (Gemini client)
 [ ] app/api/ai/draft-email/route.ts
 [ ] app/api/ai/status-report/route.ts
 [ ] app/api/ai/smart-reply/route.ts
@@ -1425,7 +1441,7 @@ n8n is hosted on the team lead's homelab and exposed via a Cloudflare tunnel —
 
 ```
 1. Team Lead sets up shared layer on main:
-   - lib/q360.ts, lib/ai.ts, lib/types.ts, lib/constants.ts
+   - lib/q360.ts, lib/agentClient.ts, lib/types.ts, lib/constants.ts
    - app/api/q360/* (all proxy routes)
    - components/ui/* (basic UI components)
    - docker-compose.yml, Dockerfile
@@ -1469,7 +1485,7 @@ n8n is hosted on the team lead's homelab and exposed via a Cloudflare tunnel —
 
 | # | Deliverable | Definition of Done |
 |---|------------|-------------------|
-| 1 | `lib/ai.ts` — Gemini client | `generateText()` works, handles errors, returns model name |
+| 1 | `lib/agentClient.ts` — Gemini client | `generateJSON()` and `generateStream()` work, handle errors |
 | 2 | `/api/ai/draft-email` route | Accepts AiToolRequest, returns email subject + body |
 | 3 | `/api/ai/status-report` route | Returns formatted status report for any entity |
 | 4 | `/api/ai/smart-reply` route | Takes inbound message, returns suggested reply |
