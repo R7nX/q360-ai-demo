@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Q360 AI Demo
 
-## Getting Started
+A Next.js prototype that demonstrates how AI workflows can be embedded into **Q360** (field service management ERP) for managers and frontline employees.
 
-First, run the development server:
+This repository is the shared codebase for a multi-team internship demo, with planning and API references included in-repo.
+
+## Project Goal
+
+Build a compelling end-of-April 2026 demo showing how AI can reduce manual work in Q360 through:
+
+- Smart drafting (emails, summaries, status updates)
+- Action recommendations based on Q360 records
+- Role-specific workflows for manager and employee views
+
+## Current Status
+
+The app scaffold and local tooling are in place, including:
+
+- Next.js 16 + React 19 project structure
+- Local SQLite mock database (`mock.db`)
+- Seeder script that pulls Q360 table schema and generates synthetic rows
+- Core planning docs (`PROJECT_MASTER_PLAN.md`, `API_STRUCTURE.md`, `FEATURE_TAB_MAPPING.md`)
+
+## Tech Stack
+
+- Next.js 16 (App Router, TypeScript)
+- React 19
+- Tailwind CSS 4
+- SQLite (`better-sqlite3`) for local mock data
+- Q360 REST API (Basic Auth via server-side env vars)
+
+## Quick Start
+
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in your Q360 and AI provider credentials in `.env.local`.
+
+For sandbox authentication conventions:
+
+- Web session endpoints (for example `/api/authenticate` and `/api/Toolbar`) use `userid=fshirley`.
+- REST API endpoints (`/api/*` with Basic Auth) use `Q360API_UTAH` (or your assigned `Q360API` user).
+- In this sandbox, the web user and API user currently share the same password.
+
+### 3) Optional: seed mock data
+
+```bash
+npm run tables                 # list available Q360 tables
+npm run seed -- dispatch 25    # seed a specific table into mock.db
+```
+
+### 4) Run development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Defined in `.env.example`:
 
-## Learn More
+- `Q360_BASE_URL` — Q360 API base URL (sandbox)
+- `Q360_API_USERNAME` — Q360 API user
+- `Q360_API_PASSWORD` — Q360 API password
+- `ANTHROPIC_API_KEY` — AI provider key
+- `USE_MOCK_DATA` — `true` to use local SQLite data path
+- `DATABASE_URL` — SQLite file path for local dev
 
-To learn more about Next.js, take a look at the following resources:
+`fshirley` is used for browser-session auth calls and uses the same sandbox password as `Q360_API_PASSWORD`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## NPM Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` — start Next.js dev server
+- `npm run build` — production build
+- `npm run start` — run production server
+- `npm run lint` — run ESLint
+- `npm run tables` — list Q360 tables from Data Dictionary API
+- `npm run seed -- <table> [count]` — seed a local table in `mock.db`
 
-## Deploy on Vercel
+## Project Docs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `PROJECT_MASTER_PLAN.md` — full implementation plan and ownership model
+- `API_STRUCTURE.md` — Q360 endpoint, schema, and auth reference
+- `FEATURE_TAB_MAPPING.md` — Q360 tab-to-feature mapping
+- `AGENT.md` — project context and assistant guardrails
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+
+- This project is a **demo/prototype**, not production software.
+- Keep secrets in `.env.local` only (never commit credentials).
