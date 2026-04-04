@@ -100,47 +100,131 @@ export interface Q360TableSchema {
   fields: Q360FieldDefinition[];
 }
 
-// Core Q360 entities
+// Shared Q360 entity types
+// This section intentionally forms a superset of the older service-oriented mock
+// layer and the broader Team 1 manager schema from the master plan. That keeps
+// the current port stable while aligning future PostgreSQL-backed pages to one
+// shared contract.
 
 export interface Dispatch {
   dispatchno: string;
-  callno: string;
+  callno?: string | null;
   customerno: string;
   siteno: string;
+  machineno?: string | null;
+  servicecontractno?: string | null;
+  projectno?: string | null;
+  techassigned?: string | null;
+  techassigned2?: string | null;
   statuscode: string;
+  calltype?: string | null;
+  problemcode?: string | null;
   problem: string | null;
   solution: string | null;
-  priority: string | null;
-  techassigned: string | null;
-  date: string | null;
+  callopendate?: string | null;
+  callstartdate?: string | null;
+  date?: string | null;
   closedate: string | null;
-  estfixtime: string | null;
-  callername: string | null;
-  calleremail: string | null;
-  callerphone: string | null;
-  description: string | null;
+  priority: string | number | null;
+  branch?: string | null;
+  caller?: string | null;
+  callername?: string | null;
+  calleremail?: string | null;
+  callerphone?: string | null;
+  csr?: string | null;
+  estfixtime?: string | null;
+  description?: string | null;
 }
 
 export interface Customer {
   customerno: string;
   company: string;
-  type: string | null;
+  phone?: string | null;
+  address1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  salesrep?: string | null;
   status: string | null;
+  balance?: number | null;
+  ytdsales?: number | null;
+  type?: string | null;
 }
 
 export interface Site {
   siteno: string;
+  customerno?: string | null;
   sitename: string;
   address: string | null;
   city: string | null;
   state: string | null;
   zip: string | null;
-  phone: string | null;
+  phone?: string | null;
+  zone?: string | null;
+  status?: string | null;
+}
+
+export interface Project {
+  projectno: string;
+  title: string;
+  customerno: string;
+  siteno?: string | null;
+  projectleader?: string | null;
+  salesrep?: string | null;
+  statuscode: string;
+  startdate?: string | null;
+  enddate?: string | null;
+  percentcomplete?: number | null;
+  hoursbudget?: number | null;
+  revenuebudget?: number | null;
 }
 
 export interface TimeBill {
-  tbstarttime: string | null;
-  tbendtime: string | null;
-  traveltime: string | null;
-  techassigned: string | null;
+  timebillno?: string;
+  userid?: string | null;
+  dispatchno?: string | null;
+  customerno?: string | null;
+  projectno?: string | null;
+  date?: string | null;
+  endtime?: string | null;
+  timebilled?: number | null;
+  rate?: number | null;
+  category?: string | null;
+  tbstarttime?: string | null;
+  tbendtime?: string | null;
+  traveltime?: string | null;
+  techassigned?: string | null;
+}
+
+export interface ServiceContract {
+  contractno: string;
+  title: string;
+  customerno: string;
+  startdate: string;
+  enddate: string;
+  renewaldate?: string | null;
+  statuscode: string;
+  monthlytotal?: number | null;
+  total?: number | null;
+}
+
+export interface User {
+  userid: string;
+  fullname: string;
+  email?: string | null;
+  type: string;
+  branch?: string | null;
+  department?: string | null;
+  activeflag: string;
+}
+
+export interface Invoice {
+  invoiceno: string;
+  customerno: string;
+  invoicedate: string;
+  duedate?: string | null;
+  invamount: number | null;
+  balance: number | null;
+  invoicetype?: string | null;
+  statuscode?: string | null;
 }

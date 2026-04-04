@@ -143,9 +143,15 @@ const projectFieldCandidates = {
   customerId: ["customerno"],
   customerName: ["customer_company", "company"],
   dueDate: ["enddate", "duedate", "installdate"],
+  hoursBudget: ["hoursbudget", "budgethours"],
   id: ["projectno"],
   lastActivityAt: ["moddate", "lastactivityat", "lastactivitydate"],
-  ownerId: ["projectleader", "salesrep", "ownerid", "userid"],
+  ownerId: ["projectleader", "ownerid", "userid"],
+  percentComplete: ["percentcomplete", "pctcomplete"],
+  revenueBudget: ["revenuebudget", "budgetrevenue", "contractamount"],
+  salesRepId: ["salesrep", "salesperson", "salesrepid"],
+  siteId: ["siteno", "siteid"],
+  startDate: ["startdate", "projectstartdate"],
   status: ["statuscode", "status"],
   title: ["title", "projecttitle"],
 } as const;
@@ -156,6 +162,8 @@ const taskFieldCandidates = {
   notes: ["sched", "comment", "description", "notes"],
   ownerId: ["assignee", "ownerid", "userid"],
   projectId: ["projectno", "projects_projectno", "linkno"],
+  projectTitle: ["projecttitle", "projects_title"],
+  sequence: ["seq", "sequence", "wbs"],
   status: ["statuscode", "status"],
   title: ["title", "tasktitle"],
   updatedAt: ["moddate", "updatedat", "date"],
@@ -171,13 +179,17 @@ const activityFieldCandidates = {
 } as const;
 
 const billingFieldCandidates = {
+  amount: ["amount", "invamount", "lineamount"],
   billedAt: ["date", "moddate"],
   category: ["category", "wagetype", "type"],
   customerId: ["customerno"],
   description: ["description", "title"],
+  dispatchId: ["dispatchno", "callno"],
   hoursBilled: ["timebilled", "totalhours", "hours"],
   id: ["timebillno", "projectno", "id"],
   projectId: ["projectno"],
+  rate: ["rate"],
+  userId: ["userid", "techassigned"],
 } as const;
 
 const activitySourcePlans: RecordSourcePlan<Activity>[] = [

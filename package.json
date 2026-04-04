@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx scripts/seed-mock-db.ts",
-    "tables": "tsx scripts/seed-mock-db.ts list"
+    "tables": "tsx scripts/seed-mock-db.ts list",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@google/genai": "^1.48.0",
@@ -16,7 +18,8 @@
     "lucide-react": "^1.7.0",
     "next": "16.2.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
@@ -30,6 +33,9 @@
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@vitest/coverage-v8": "^4.1.1",
+    "msw": "^2.12.14",
+    "vitest": "^4.1.1"
   }
 }
