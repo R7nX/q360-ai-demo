@@ -61,7 +61,7 @@ export function isMockMode(): boolean {
 export function getQ360Config() {
   return q360EnvSchema.parse({
     Q360_BASE_URL: process.env.Q360_BASE_URL,
-    Q360_API_USER: process.env.Q360_API_USER,
+    Q360_API_USER: process.env.Q360_API_USER ?? process.env.Q360_API_USERNAME,
     Q360_API_PASSWORD: process.env.Q360_API_PASSWORD,
   });
 }
