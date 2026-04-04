@@ -79,10 +79,9 @@ We are building a **demo web app** that embeds AI into **Q360** (a field service
 | **AI Provider** | **Google Gemini (free tier)** | Free API access; `gemini-2.0-flash` for all tools |
 | **AI SDK** | **`@google/generative-ai`** | Official Google AI JS SDK |
 | **Q360 API** | **REST (Basic Auth)** | Sandbox at `https://rest.q360.online` |
-| **Automation** | **n8n (self-hosted via Docker)** | Visual workflow builder; connects Q360 events → AI → actions |
+| **Automation** | **n8n (self-hosted, homelab)** | Visual workflow builder; connects Q360 events → AI → actions; accessible via Cloudflare tunnel |
 | **Database (dev)** | **SQLite via `better-sqlite3`** | Already set up; mock data for offline dev |
-| **Containerization** | **Docker + docker-compose** | Consistent env for all teammates |
-| **Deployment** | **Vercel** (Next.js) + **n8n Cloud or Docker** | Free tier for demo |
+| **Deployment** | **Vercel** (Next.js) + **n8n homelab** | Free tier for demo; n8n already running |
 
 ### Why Gemini Free Tier?
 
@@ -122,7 +121,6 @@ Every teammate follows these steps **exactly**. If something doesn't work, ask i
 |------|---------|---------|
 | Node.js | 20 LTS or 22 LTS | https://nodejs.org |
 | Git | Latest | https://git-scm.com |
-| Docker Desktop | Latest | https://docker.com (for n8n) |
 | VS Code | Latest | Recommended editor |
 
 ### 3.2 Clone & Install
@@ -162,8 +160,8 @@ USE_MOCK_DATA=true
 # Database (SQLite for local dev)
 DATABASE_URL=file:./mock.db
 
-# n8n (only needed if running n8n locally)
-N8N_PORT=5678
+# n8n (hosted on homelab, accessible via Cloudflare tunnel)
+N8N_BASE_URL=<ask team lead for Cloudflare tunnel URL>
 ```
 
 ### 3.4 Run the App
@@ -177,15 +175,13 @@ npm run dev
 # → http://localhost:3000
 ```
 
-### 3.5 Run n8n (Docker)
+### 3.5 Accessing n8n
 
-```bash
-docker run -d --name n8n \
-  -p 5678:5678 \
-  -v n8n_data:/home/node/.n8n \
-  n8nio/n8n
-# → http://localhost:5678
-```
+n8n is already running on the team lead's homelab and is accessible to everyone via a Cloudflare tunnel. No local setup or Docker required.
+
+Ask the team lead for the n8n URL and set it as `N8N_BASE_URL` in your `.env.local`.
+
+To import workflows, open the n8n URL in your browser and import the JSON files from `n8n/workflows/`.
 
 ---
 
@@ -1365,7 +1361,7 @@ n8n is a **visual workflow automation tool** (like Zapier, but self-hosted and f
 1. **Schedule Trigger** — runs every 5 min
 2. **HTTP Request** — `POST` to Q360 API to list recent dispatches
 3. **IF** — new dispatches found?
-4. **HTTP Request** — `POST` to `http://localhost:3000/api/ai/summarize` with dispatch data
+4. **HTTP Request** — `POST` to `https://<your-app-url>/api/ai/summarize` with dispatch data
 5. **Slack / Email** — send the AI summary to a channel or manager
 
 **n8n nodes used:** Schedule Trigger → HTTP Request → IF → HTTP Request → Slack
@@ -1394,45 +1390,20 @@ n8n is a **visual workflow automation tool** (like Zapier, but self-hosted and f
 
 ### n8n Setup Instructions
 
-```bash
-# 1. Add to docker-compose.yml (see below)
-# 2. Start: docker-compose up -d
-# 3. Open: http://localhost:5678
-# 4. Import workflow JSON files from n8n/workflows/
+n8n is hosted on the team lead's homelab and exposed via a Cloudflare tunnel — no Docker or local install needed.
+
+```
+1. Get the n8n URL from the team lead
+2. Open the URL in your browser
+3. Import workflow JSON files from n8n/workflows/
 ```
 
-**docker-compose.yml addition:**
-
-```yaml
-services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    env_file: .env.local
-
-  n8n:
-    image: n8nio/n8n
-    ports:
-      - "5678:5678"
-    volumes:
-      - n8n_data:/home/node/.n8n
-    environment:
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://localhost:5678
-
-volumes:
-  n8n_data:
-```
-
-### n8n Environment Variables (set in n8n UI → Credentials)
+### n8n Credentials (set in n8n UI → Credentials)
 
 | Credential | Type | Values |
 |-----------|------|--------|
 | Q360 API | HTTP Header Auth | `Authorization: Basic <base64>` |
-| Next.js App | None needed | n8n calls `http://app:3000/api/ai/*` (Docker network) |
+| Next.js App | None needed | n8n calls your Vercel URL or `http://<your-local-ip>:3000/api/ai/*` |
 | Slack (optional) | OAuth2 | Slack app token |
 | Email (optional) | SMTP | Any SMTP server |
 
