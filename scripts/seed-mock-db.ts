@@ -95,11 +95,14 @@ async function fetchColumns(table: string): Promise<Q360Column[]> {
     )
   }
 
-  return columns.map((col: any) => ({
-    name:     col.field_name ?? '',
-    type:     col.sqltype    ?? 'VARCHAR',
-    nullable: col.mandatoryflag !== 'Y',
-  })).filter(c => c.name.length > 0)
+  return columns.map((col) => {
+    const c = col as Record<string, unknown>
+    return {
+      name:     (c.field_name as string) ?? '',
+      type:     (c.sqltype as string)    ?? 'VARCHAR',
+      nullable: c.mandatoryflag !== 'Y',
+    }
+  }).filter(c => c.name.length > 0)
 }
 
 // ─── Type Mapping ──────────────────────────────────────────────────────────
@@ -221,7 +224,8 @@ async function listTables() {
   if (!tables.length) throw new Error('No tables returned — check your API credentials.')
   console.log(`\n Available Q360 tables (${tables.length}):\n`)
   for (const t of tables) {
-    const name = typeof t === 'string' ? t : (t as any).table_dbf ?? (t as any).tablename ?? (t as any).name ?? JSON.stringify(t)
+    const obj = t as Record<string, unknown>
+    const name = typeof t === 'string' ? t : String(obj.table_dbf ?? obj.tablename ?? obj.name ?? JSON.stringify(t))
     console.log(`   ${name}`)
   }
   console.log()
