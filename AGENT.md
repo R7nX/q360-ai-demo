@@ -94,7 +94,7 @@ The demo app is divided into three primary features, each owned by a separate te
 | Layer | Recommendation | Rationale |
 |-------|---------------|-----------|
 | **Framework** | **Next.js (TypeScript)** | Handles frontend + backend in one repo; API Routes keep credentials server-side safely; natural Vercel deployment; largest ecosystem for React |
-| **AI** | **Claude API — `claude-sonnet-4-6`** | Default for all AI tasks. Use `claude-opus-4-6` only for complex reasoning |
+| **AI** | **Google Gemini — `gemini-2.0-flash`** (free tier) | Default for all AI tasks. Free API key at https://aistudio.google.com/apikey |
 | **Containerization** | **Docker + docker-compose** | Consistent env across all 3 teams; no "works on my machine" issues; production-deployable from day one |
 | **Deployment (target)** | **Vercel** | Free tier; zero-config Next.js deployment; instant preview URLs per branch |
 | **Email — Phase 1** | **Draft only** (text in UI for user to copy) | Simplest path for demo; designed so Phase 2 slots in cleanly |
@@ -113,8 +113,8 @@ Browser (Next.js Frontend — React components)
 Next.js API Routes  ◄── ALL secrets live here (.env.local)
     │                        │
     ▼                        ▼
-Q360 REST API          Claude API (Anthropic)
-(sandbox)              (claude-sonnet-4-6)
+Q360 REST API          Gemini API (Google)
+(sandbox)              (gemini-2.0-flash)
 ```
 
 **Key rule:** Credentials and API keys never leave the server. The browser only talks to our own Next.js API routes.
@@ -143,8 +143,111 @@ Q360 REST API          Claude API (Anthropic)
 | `Q360 API v25 - Getting-Started.pdf` | Optional reference artifact if checked into this repo |
 | `AGENT.md` | **This file** — full project context for AI assistants |
 | `API_STRUCTURE.md` | Human-readable Q360 API reference (endpoints, schemas, entities) |
-| `FEATURE_2_PLAN.md` | Optional planning doc (if split out from master plan) |
-| `ENV_SETUP.md` | Optional setup doc (if split out from README/master plan) |
+| `FEATURE_TAB_MAPPING.md` | Maps Q360 tabs → teams, defines Next.js routes & file ownership |
+| `PROJECT_MASTER_PLAN.md` | **Full project scaffolding** — file tree, gameplans, deliverables, n8n |
+| `FEATURE_2_PLAN.md` | Full plan for Feature 2: Automated Utility Suite |
+| `ENV_SETUP.md` | Local environment setup guide (updated as project evolves) |
+
+---
+
+## Shared Layer (Already Built — Use These, Don't Recreate)
+
+The following shared files are already on `main`. **Import and use them directly.** Do not create duplicates or write raw `fetch()` calls to Q360/Gemini.
+
+### `lib/q360.ts` — Q360 API Client
+
+All Q360 data access goes through this module. Never put Q360 credentials in any other file.
+
+```typescript
+import { q360Query, getDispatches, getProjects, getCustomers, getContacts,
+         getTimeBills, getServiceContracts, getSites, getUsers, getInvoices } from "@/lib/q360";
+
+// Generic query (any table):
+const { result, total, hasMore } = await q360Query<MyType>("TableName", {
+  columns: ["COL1", "COL2"],
+  filters: [{ field: "STATUS", op: "=", value: "OPEN" }],
+  orderBy: [{ field: "DATE", dir: "DESC" }],
+  limit: 50,
+});
+
+// Convenience functions (pre-configured columns, optional filters + limit):
+const dispatches = await getDispatches([{ field: "STATUSCODE", op: "=", value: "OPEN" }]);
+const projects   = await getProjects();
+```
+
+### `lib/ai.ts` — Gemini AI Client
+
+All AI text generation goes through `generateText()`. Uses `gemini-2.0-flash` (free tier) by default.
+
+```typescript
+import { generateText } from "@/lib/ai";
+
+const { text, model } = await generateText("Summarize this dispatch...", {
+  systemInstruction: "You are a field service AI assistant.",
+  temperature: 0.5,
+  maxTokens: 1024,
+});
+```
+
+### `lib/types.ts` — Shared TypeScript Types
+
+All Q360 entity interfaces and the AI tool request/response contract:
+
+```typescript
+import type { Dispatch, Customer, Project, Site, TimeBill, ServiceContract,
+              User, Invoice, Contact } from "@/lib/types";
+import type { AiToolRequest, AiToolResponse, EntityType, Audience, Tone } from "@/lib/types";
+```
+
+### `lib/constants.ts` — Routes & API Endpoints
+
+```typescript
+import { ROUTES, API, DISPATCH_STATUSES, PROJECT_STATUSES } from "@/lib/constants";
+
+// Page routes:  ROUTES.MANAGER_DASHBOARD, ROUTES.EMPLOYEE_HOME, etc.
+// API routes:   API.Q360_DISPATCHES, API.AI_DRAFT_EMAIL, etc.
+```
+
+### Q360 Proxy API Routes (9 routes)
+
+All available at `GET /api/q360/<entity>` with optional query params for filtering:
+
+| Endpoint | Query Params |
+|----------|-------------|
+| `/api/q360/dispatches` | `?status=`, `?tech=`, `?priority=`, `?limit=` |
+| `/api/q360/projects` | `?status=`, `?leader=`, `?limit=` |
+| `/api/q360/customers` | `?status=`, `?salesrep=`, `?limit=` |
+| `/api/q360/contacts` | `?customer=`, `?limit=` |
+| `/api/q360/timebills` | `?user=`, `?dispatch=`, `?project=`, `?limit=` |
+| `/api/q360/service-contracts` | `?status=`, `?customer=`, `?limit=` |
+| `/api/q360/sites` | `?customer=`, `?zone=`, `?limit=` |
+| `/api/q360/users` | `?type=`, `?branch=`, `?active=`, `?limit=` |
+| `/api/q360/invoices` | `?customer=`, `?type=`, `?limit=` |
+
+### UI Components (`components/ui/`)
+
+Basic Tailwind-styled primitives — use these for consistent styling:
+
+| Component | Import | Key Props |
+|-----------|--------|-----------|
+| `Button` | `@/components/ui/Button` | `variant`: primary/secondary/danger/ghost, `size`: sm/md/lg |
+| `Card`, `CardHeader`, `CardTitle` | `@/components/ui/Card` | `padding`: sm/md/lg |
+| `Badge` | `@/components/ui/Badge` | `variant`: default/success/warning/danger/info |
+| `Spinner` | `@/components/ui/Spinner` | `size`: sm/md/lg |
+| `Input` | `@/components/ui/Input` | `label`, `error` |
+
+### File Ownership Rules
+
+Each team works **only** in their designated directories. See `PROJECT_MASTER_PLAN.md` for full details.
+
+| Team | Owns These Paths |
+|------|-----------------|
+| Team 1 | `app/(manager)/**`, `components/manager/**` |
+| Team 2 | `app/api/ai/**`, `components/ai/**`, `lib/ai.ts`, `app/api/n8n/**` |
+| Team 3 | `app/(employee)/**`, `components/employee/**` |
+| Shared | `lib/q360.ts`, `lib/types.ts`, `lib/constants.ts`, `app/api/q360/**`, `components/ui/**` |
+
+> If you need to modify a shared file, coordinate with the team lead first.
 
 ---
 
@@ -157,4 +260,6 @@ Q360 REST API          Claude API (Anthropic)
 5. **Email is draft-only for now.** Feature 2 shows generated email text in the UI. Actual sending (Resend/SendGrid) is a future add-on — but structure the code so it's easy to plug in.
 6. **Demo scope.** Prioritize a working, impressive demonstration over perfect production architecture. Keep it pragmatic.
 7. **Feature branches.** Each team works in isolation on their own branch. Don't assume other teams' code exists when building a feature.
-8. **AI model defaults.** Use `claude-sonnet-4-6` by default. Only escalate to `claude-opus-4-6` when deep reasoning is clearly needed.
+8. **AI model defaults.** Use `gemini-2.0-flash` by default. This is the free tier model — no billing needed.
+9. **Use the shared layer.** Import from `@/lib/q360`, `@/lib/ai`, `@/lib/types`, `@/lib/constants`. Never write raw `fetch()` calls to Q360 or Gemini directly — always use the shared clients.
+10. **Read `PROJECT_MASTER_PLAN.md`** before starting any feature work — it defines exact file paths, naming conventions, and step-by-step gameplans for each team.
