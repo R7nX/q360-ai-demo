@@ -3,7 +3,8 @@
 > **The single source of truth for all three teams.**
 > Every file name, every route, every component — defined here so nothing collides.
 >
-> **Last updated:** 2026-04-03
+> **Status note:** This is a target-state implementation plan. Some routes/files below are planned and may not yet exist on `main`.
+> **Last updated:** 2026-04-04
 > **Demo deadline:** End of April 2026
 
 ---
@@ -148,6 +149,10 @@ Q360_BASE_URL=https://rest.q360.online
 Q360_API_USERNAME=Q360API_UTAH
 Q360_API_PASSWORD=<ask team lead>
 
+# Web sandbox login (browser-session endpoints like /api/authenticate, /api/Toolbar)
+# Use userid=fshirley and the same password as Q360_API_PASSWORD
+# (current sandbox convention)
+
 # Google Gemini (free tier)
 GEMINI_API_KEY=<get yours at https://aistudio.google.com/apikey>
 
@@ -186,7 +191,7 @@ docker run -d --name n8n \
 
 ## 4. Repository Structure — Complete File Tree
 
-> **This is the contract.** Every team creates files ONLY in their designated paths.
+> **This is the target contract.** Every team creates files ONLY in their designated paths once shared setup is complete.
 > Files marked with `[SHARED]` are set up on `main` before branching — teams ADD to them, never replace.
 
 ```

@@ -3,7 +3,8 @@
 > Maps each feature team to Q360 tabs, data tables, and Next.js routes.
 > Use this to: (1) know which Q360 screens to compare your work against, (2) avoid route/file collisions between teams, (3) understand which data each team owns.
 >
-> **Updated: 2026-04-03** — Reflects role change: F1 = Manager homepage, F3 = Employee homepage, F2 = shared AI tools.
+> **Status note:** This is a target routing/ownership map. Listed routes/components may be planned and not yet implemented on `main`.
+> **Updated: 2026-04-04** — Reflects role change: F1 = Manager homepage, F3 = Employee homepage, F2 = shared AI tools.
 
 ---
 

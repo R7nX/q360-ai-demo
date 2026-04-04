@@ -21,7 +21,7 @@ The goal is to show the Q360 sponsor company how AI can be embedded into their e
 | Team Leader | The user (communicates with team via Slack) |
 | Team Split | 3 sub-teams, each owning one Core Feature |
 | Stack | Next.js (strongly recommended, see below) + Claude API + Q360 REST API |
-| API Testing | Postman (collection file included in this repo) |
+| API Testing | Postman / curl (collection artifact is optional and may not be committed) |
 | Source Control | GitHub — one branch per feature team, merged for demo |
 
 ---
@@ -46,13 +46,13 @@ The Q360 REST API allows CRUD operations on all of these entities. See `API_STRU
 | Item | Value |
 |------|-------|
 | Base URL | `https://rest.q360.online` |
-| API Docs (live) | `http://rest.q360.online/APIDocumentation` (Beta) |
+| API Docs (live) | `https://rest.q360.online/APIDocumentation/` |
 | Web Login User | `fshirley` / see `.env.local` |
 | API User | `Q360API_UTAH` / see `.env.local` |
 | Auth Type | HTTP Basic Auth (Base64 encoded) |
 | Data | Synthetic test data only |
 
-**Important:** Only `Q360API` type users can use Basic Auth for REST API calls. `fshirley` is a web/browser-only user. `Q360API_UTAH` is confirmed working as of 2026-03-23. Credentials are in `.env.local` — never commit them.
+**Important:** Only `Q360API` type users can use Basic Auth for REST API calls. `fshirley` is a web/browser-session user (`/api/authenticate` + cookies), while `Q360API_UTAH` is for Basic Auth API calls. In the current sandbox, both users share the same password in `.env.local` (never commit credentials).
 
 ---
 
@@ -138,13 +138,13 @@ Q360 REST API          Claude API (Anthropic)
 
 | File | Purpose |
 |------|---------|
-| `Q360 v25.01.001.openapi.yaml` | OpenAPI spec — source of truth for Q360 API |
-| `Q360 v25.01.001.postman_collection.json` | Postman collection for manual API testing |
-| `Q360 API v25 - Getting-Started.pdf` | Official Q360 getting-started guide |
+| `Q360 v25.01.001.openapi.yaml` | Optional source artifact if exported into this repo |
+| `Q360 v25.01.001.postman_collection.json` | Optional Postman artifact if exported into this repo |
+| `Q360 API v25 - Getting-Started.pdf` | Optional reference artifact if checked into this repo |
 | `AGENT.md` | **This file** — full project context for AI assistants |
 | `API_STRUCTURE.md` | Human-readable Q360 API reference (endpoints, schemas, entities) |
-| `FEATURE_2_PLAN.md` | Full plan for Feature 2: Automated Utility Suite |
-| `ENV_SETUP.md` | Local environment setup guide (updated as project evolves) |
+| `FEATURE_2_PLAN.md` | Optional planning doc (if split out from master plan) |
+| `ENV_SETUP.md` | Optional setup doc (if split out from README/master plan) |
 
 ---
 

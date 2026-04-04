@@ -1,8 +1,8 @@
 # API_STRUCTURE.md — Q360 Platform Reference
 
 > Comprehensive reference for the Q360 v25.01.001 REST API and full platform navigation/data model.
-> Based on: Live Data Dictionary API (1,633 tables), live Toolbar API (656 nav items via fshirley session), and JS bundle analysis.
-> **Last verified: 2026-04-03**
+> Based on: Live Data Dictionary API (1,633 tables), live Toolbar API (658 nav items via fshirley session), and JS bundle analysis.
+> **Last verified: 2026-04-04**
 
 ---
 
@@ -28,7 +28,7 @@
 | Auth (REST API) | HTTP Basic Auth (`Q360API` users only) |
 | Auth (Web UI) | `POST /api/authenticate` → JWT cookies (`q360_at`, `q360_rt`) |
 | Content-Type (writes) | `multipart/form-data` |
-| Live Docs | `https://rest.q360.online/APIDocumentation` (browser login required) |
+| Live Docs | `https://rest.q360.online/APIDocumentation/` (browser login required) |
 | Total DB Tables | 1,633 (tables + views) |
 
 ---
@@ -44,6 +44,7 @@ Authorization: Basic <base64(username:password)>
 - Only users with Q360 user type `Q360API` can use Basic Auth
 - The user must have both `activeflag` and `loginflag` set to `Y`
 - Regular web users (e.g. `fshirley`) cannot authenticate via Basic Auth
+- Current sandbox convention: use `Q360API_UTAH` for Basic Auth API calls
 
 ### Web UI (for browser sessions)
 
@@ -57,6 +58,8 @@ userid=fshirley&password=<password>
 - Returns JWT cookies: `q360_at` (access token, ~10min) and `q360_rt` (refresh token, ~15hr)
 - Use these cookies for browser-session endpoints like `GET /api/Toolbar`
 - **Note:** `POST /api/Application?_a=login` does NOT work — use `/api/authenticate`
+- Current sandbox convention: use `userid=fshirley` for web-session calls
+- In this sandbox, `fshirley` and `Q360API_UTAH` currently share the same password
 
 **Sandbox credentials:** see `.env.local` (never commit)
 
@@ -80,7 +83,7 @@ Returns all 1,633 tables and views. Only **tables** support Create/Update/Delete
 GET /api/DataDict?_a=list&tablename=<TableName>
 ```
 
-> `tablename` must be **capitalized** (e.g. `Dispatch`, `Customer`)
+> `tablename` is currently case-insensitive in sandbox responses (`Dispatch`, `dispatch`, and `DISPATCH` all worked on 2026-04-04). Prefer canonical capitalization for readability.
 
 **Response shape:**
 ```json
@@ -121,6 +124,8 @@ GET /api/UserID?_a=datasourceAccessList&userid=<api_username>
 ```
 
 Check which data sources a specific API user can query. Call before Record List to confirm permissions.
+
+> Observed behavior on 2026-04-04 for `Q360API_UTAH`: this endpoint returned `401` (unauthorized). Treat as permission-dependent and non-critical for baseline reads.
 
 ---
 
@@ -226,13 +231,13 @@ GET /api/Toolbar
 
 > **Requires browser session** (JWT cookies from `/api/authenticate`). NOT accessible via Basic Auth.
 
-Returns `{ payload: { navigation: [...], favorites: [...] } }` — the full hierarchical menu tree (656 items for fshirley). Each item has: `menuitemno`, `parentmenuitemno`, `caption`, `itemtype` (HEADING/ITEM), `action`, `menuicon`, `componentid`, `hotkey`.
+Returns `{ payload: { navigation: [...], favorites: [...] } }` — the full hierarchical menu tree (658 items for fshirley as of 2026-04-04). Each item has: `menuitemno`, `parentmenuitemno`, `caption`, `itemtype` (HEADING/ITEM), `action`, `menuicon`, `componentid`, `hotkey`.
 
 ---
 
 ## 4. Q360 Platform Navigation — All Tabs & Sub-Tabs
 
-> Verified against live Toolbar API response for user `fshirley` on 2026-04-03.
+> Verified against live Toolbar API response for user `fshirley` on 2026-04-04.
 > The nav is a **top menu bar** with 12 root tabs. Each tab opens a dropdown/sidebar with nested sub-menus.
 > Tab captions may vary per company — Q360 supports relabeling via "User Defined Captions" in Maintenance.
 

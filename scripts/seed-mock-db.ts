@@ -213,7 +213,7 @@ function generateValue(col: Q360Column): string | number | null {
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 async function listTables() {
-  const url = `${BASE_URL}/api/DataDict?_a=list`
+  const url = `${BASE_URL}/api/DataDict?_a=tableList`
   const res = await fetch(url, { headers: { Authorization: AUTH_HEADER } })
   if (!res.ok) throw new Error(`Q360 API returned ${res.status} ${res.statusText}`)
   const json = await res.json()

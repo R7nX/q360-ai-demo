@@ -45,6 +45,12 @@ cp .env.example .env.local
 
 Fill in your Q360 and AI provider credentials in `.env.local`.
 
+For sandbox authentication conventions:
+
+- Web session endpoints (for example `/api/authenticate` and `/api/Toolbar`) use `userid=fshirley`.
+- REST API endpoints (`/api/*` with Basic Auth) use `Q360API_UTAH` (or your assigned `Q360API` user).
+- In this sandbox, the web user and API user currently share the same password.
+
 ### 3) Optional: seed mock data
 
 ```bash
@@ -70,6 +76,8 @@ Defined in `.env.example`:
 - `ANTHROPIC_API_KEY` — AI provider key
 - `USE_MOCK_DATA` — `true` to use local SQLite data path
 - `DATABASE_URL` — SQLite file path for local dev
+
+`fshirley` is used for browser-session auth calls and uses the same sandbox password as `Q360_API_PASSWORD`.
 
 ## NPM Scripts
 
