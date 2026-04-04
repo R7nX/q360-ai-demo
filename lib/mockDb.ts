@@ -17,6 +17,40 @@ function hasTable(db: Database.Database, table: string): boolean {
   return !!row;
 }
 
+export function getAllCustomersFromMockDb(): Record<string, Customer> {
+  const db = getDb();
+  if (!db) return {};
+  try {
+    if (!hasTable(db, "customer")) return {};
+    const rows = db.prepare("SELECT * FROM customer").all() as Record<string, unknown>[];
+    const map: Record<string, Customer> = {};
+    for (const row of rows) {
+      const r = lowerKeys(row);
+      const no = str(r.customerno);
+      if (!no) continue;
+      map[no] = { customerno: no, company: str(r.company) ?? "Unknown", type: str(r.type), status: str(r.status) ?? str(r.statuscode) };
+    }
+    return map;
+  } finally { db.close(); }
+}
+
+export function getAllSitesFromMockDb(): Record<string, Site> {
+  const db = getDb();
+  if (!db) return {};
+  try {
+    if (!hasTable(db, "site")) return {};
+    const rows = db.prepare("SELECT * FROM site").all() as Record<string, unknown>[];
+    const map: Record<string, Site> = {};
+    for (const row of rows) {
+      const r = lowerKeys(row);
+      const no = str(r.siteno);
+      if (!no) continue;
+      map[no] = { siteno: no, sitename: str(r.sitename) ?? "Unknown Site", address: str(r.address), city: str(r.city), state: str(r.state), zip: str(r.zip), phone: str(r.phone) };
+    }
+    return map;
+  } finally { db.close(); }
+}
+
 export function getDispatchesFromMockDb(): Dispatch[] | null {
   const db = getDb();
   if (!db) return null;

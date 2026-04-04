@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Sparkles, Zap } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, Zap, ScanSearch } from "lucide-react";
 import RecordSelector from "./components/RecordSelector";
 import AutomationTypeCard from "./components/AutomationTypeCard";
 import ToneSelector from "./components/ToneSelector";
@@ -99,6 +100,13 @@ export default function Feature2Page() {
                 AI-powered email drafting from Q360 service records
               </p>
             </div>
+            <Link
+              href="/feature2/overdue"
+              className="ml-auto flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors"
+            >
+              <ScanSearch className="h-4 w-4" />
+              Overdue Alert
+            </Link>
           </div>
         </div>
       </header>
@@ -121,6 +129,7 @@ export default function Feature2Page() {
               <RecordSelector
                 selectedId={selectedRecord?.id ?? null}
                 onSelect={setSelectedRecord}
+                automationType={automationType}
               />
             </section>
 
@@ -136,7 +145,10 @@ export default function Feature2Page() {
               </div>
               <AutomationTypeCard
                 selected={automationType}
-                onSelect={setAutomationType}
+                onSelect={(type) => {
+                  setAutomationType(type);
+                  setSelectedRecord(null);
+                }}
               />
             </section>
 
