@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { Q360Envelope, Q360ErrorItem } from "@/lib/q360/types";
+import type { Q360Envelope, Q360ErrorItem } from "@/types/q360";
 
 const q360ErrorItemSchema = z.object({
   seq: z.string().optional(),

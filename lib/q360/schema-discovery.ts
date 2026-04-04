@@ -22,7 +22,7 @@ import type {
   Q360SourceKind,
   Q360TableListItem,
   Q360TableSchema,
-} from "@/lib/q360/types";
+} from "@/types/q360";
 
 const CACHE_TTL_MS = 5 * 60_000;
 const MATCH_SAMPLE_LIMIT = 8;
