@@ -1,10 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "gemini-2.5-flash";
 
 /**
  * Stream an AI response. Returns a ReadableStream suitable for
@@ -14,11 +12,10 @@ export async function generateStream(
   systemPrompt: string,
   userPrompt: string
 ): Promise<ReadableStream<Uint8Array>> {
-  const stream = anthropic.messages.stream({
+  const response = await ai.models.generateContentStream({
     model: MODEL,
-    max_tokens: 800,
-    system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    config: { systemInstruction: systemPrompt },
   });
 
   const encoder = new TextEncoder();
@@ -26,8 +23,9 @@ export async function generateStream(
   return new ReadableStream({
     async start(controller) {
       try {
-        for await (const text of stream.text_stream) {
-          controller.enqueue(encoder.encode(text));
+        for await (const chunk of response) {
+          const text = chunk.text;
+          if (text) controller.enqueue(encoder.encode(text));
         }
         controller.close();
       } catch (error) {
