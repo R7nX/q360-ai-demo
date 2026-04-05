@@ -51,6 +51,7 @@ export function getAllSitesFromMockDb(): Record<string, Site> {
   } finally { db.close(); }
 }
 
+
 export function getDispatchesFromMockDb(): Dispatch[] | null {
   const db = getDb();
   if (!db) return null;
