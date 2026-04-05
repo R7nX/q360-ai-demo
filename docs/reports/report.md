@@ -362,3 +362,25 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - ran `npm run lint`; the only warning is the pre-existing unrelated unused variable in `scripts/seed-local.ts`
   - ran `npm run build` and captured the blocking failures instead of ignoring them
   - verified the new empty states and route fallback behavior are represented in the employee code paths
+
+## Documentation Cleanup: Seed Script Consolidation
+
+- Date: 2026-04-05
+- Status: complete
+- Work completed:
+  - updated `docs/SEED_SCRIPT_REFINEMENT.md` to match the current `scripts/seed-data.ts` cluster counts (`Recently Closed: 18`, `On Hold/Pending: 4`)
+  - updated `docs/plans/PROJECT_MASTER_PLAN.md` script tree to reflect the unified seed setup (`scripts/seed.ts` + `scripts/seed-data.ts`)
+  - added this cleanup entry to mark older `scripts/seed-local.ts` references in prior report sections as historical context from pre-consolidation stages
+- Files touched:
+  - `docs/SEED_SCRIPT_REFINEMENT.md`
+  - `docs/plans/PROJECT_MASTER_PLAN.md`
+  - `docs/reports/report.md`
+- Data mode:
+  - documentation
+- Blockers / dependencies:
+  - none
+- Next step:
+  - continue seed refinement directly in `scripts/seed.ts` and `scripts/seed-data.ts` with docs now aligned to current script ownership
+- Tested:
+  - verified `rg -n "seed-mock-db.ts" docs/plans/PROJECT_MASTER_PLAN.md` no longer returns results
+  - verified the seed refinement cluster totals now match the live dataset definitions in `scripts/seed-data.ts`
