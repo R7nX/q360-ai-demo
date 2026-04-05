@@ -14,29 +14,11 @@ import {
   FALLBACK_CUSTOMERS,
   FALLBACK_SITES,
 } from "@/lib/q360Client";
+import { computeDaysOverdue } from "@/lib/computeDaysOverdue";
 import type { Dispatch, Customer, Site } from "@/types/q360";
 import type { OverdueApiResponse, OverdueAnalysisResult } from "@/types/feature2";
 
 const OPEN_STATUSES = new Set(["OPEN", "IN PROGRESS", "PENDING", "ON HOLD"]);
-
-export function computeDaysOverdue(dispatch: Dispatch, today: Date): number {
-  const tryDate = (val: string | null): Date | null => {
-    if (!val || val === ".00" || val.trim() === "") return null;
-    const d = new Date(val);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  const deadline =
-    tryDate(dispatch.estfixtime) ??
-    (() => {
-      const opened = tryDate(dispatch.date);
-      if (!opened) return null;
-      return new Date(opened.getTime() + 7 * 86400000);
-    })();
-
-  if (!deadline) return 0;
-  return Math.floor((today.getTime() - deadline.getTime()) / 86400000);
-}
 
 export async function POST(): Promise<Response> {
   const today = new Date();
