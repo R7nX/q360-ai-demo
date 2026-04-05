@@ -1,3 +1,6 @@
+/**
+ * Tests for `POST /api/ai/draft-email` validation, streaming, and error mapping.
+ */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Dispatch, Customer, Site } from "@/types/q360";
 

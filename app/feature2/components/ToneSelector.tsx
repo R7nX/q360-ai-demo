@@ -1,3 +1,6 @@
+/**
+ * Radio-style tone picker (professional / friendly / concise) for generated emails.
+ */
 "use client";
 
 import type { ToneOption } from "@/types/feature2";

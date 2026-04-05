@@ -1,3 +1,6 @@
+/**
+ * Vitest + React plugin: node environment, jest-dom setup, `@` alias, coverage for lib and API routes.
+ */
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "path";

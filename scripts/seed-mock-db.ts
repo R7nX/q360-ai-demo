@@ -59,8 +59,8 @@ if (!BASE_URL || !USERNAME || !PASSWORD) {
 }
 
 console.log(` Base URL : ${BASE_URL}`)
-console.log(` API User : ${USERNAME}`)
-console.log(` Auth     : Basic ${Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64').substring(0, 10)}...`)
+console.log(` API User : ***`)
+console.log(` Auth     : Basic ***`)
 console.log()
 
 const AUTH_HEADER = 'Basic ' + Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64')

@@ -1,3 +1,6 @@
+/**
+ * Overdue dispatch scanner UI: calls /api/feature2/overdue and renders urgency tiers and alert cards.
+ */
 "use client";
 
 import { useState, useMemo } from "react";

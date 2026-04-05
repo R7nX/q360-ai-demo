@@ -1,3 +1,6 @@
+/**
+ * Layout for the employee demo area: sidebar navigation and main content column.
+ */
 import { EmployeeSidebar } from "@/components/ai/employee/EmployeeSidebar";
 
 export default function EmployeeLayout({

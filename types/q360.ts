@@ -1,4 +1,6 @@
-// Q360 REST API response and entity types
+/**
+ * Q360 REST envelope types and normalized entity shapes used by `lib/q360`, `q360Client`, and routes.
+ */
 
 export interface Q360Response<T = unknown> {
   code: number;

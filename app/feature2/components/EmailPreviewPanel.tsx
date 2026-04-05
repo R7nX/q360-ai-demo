@@ -1,3 +1,6 @@
+/**
+ * Subject/body preview with copy, manual edit, and regenerate hooks while streaming completes.
+ */
 "use client";
 
 import { useState } from "react";

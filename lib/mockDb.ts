@@ -1,3 +1,6 @@
+/**
+ * Read-only SQLite accessors for local `mock.db` (dispatches, customers, sites, time bills, tasks).
+ */
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";

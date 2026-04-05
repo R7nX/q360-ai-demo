@@ -1,3 +1,6 @@
+/**
+ * Lists the current employee’s dispatch summaries from demo data.
+ */
 import { DispatchCard } from "@/components/ai/employee/DispatchCard";
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";
 import {

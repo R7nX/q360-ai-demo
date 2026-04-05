@@ -1,3 +1,6 @@
+/**
+ * Morning-style briefing panel with summary bullets and dispatch/task counts.
+ */
 type DailyBriefingProps = {
   title: string;
   summary: string;

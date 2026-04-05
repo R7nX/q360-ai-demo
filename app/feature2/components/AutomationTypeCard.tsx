@@ -1,3 +1,6 @@
+/**
+ * Selectable tiles for Feature 2 automation kinds (status email, closure, overdue, etc.).
+ */
 "use client";
 
 import { FileText, FileCheck, AlertTriangle, Bell } from "lucide-react";

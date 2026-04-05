@@ -1,3 +1,6 @@
+/**
+ * Left navigation for employee routes with active-path highlighting.
+ */
 "use client";
 
 import Link from "next/link";

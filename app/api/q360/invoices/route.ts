@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/invoices — Q360 invoices with optional query filters.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getInvoices } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";
