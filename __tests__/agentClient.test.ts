@@ -1,3 +1,6 @@
+/**
+ * Unit tests for `lib/agentClient` streaming and JSON generation (mocked `@google/genai`).
+ */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // vi.hoisted ensures these mocks are available when vi.mock() factory runs

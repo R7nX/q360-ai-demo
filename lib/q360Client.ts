@@ -1,3 +1,6 @@
+/**
+ * Typed HTTP helpers and bundled fallback entities when Q360 env vars or network are unavailable.
+ */
 import type {
   Q360Response,
   Q360RecordListPayload,

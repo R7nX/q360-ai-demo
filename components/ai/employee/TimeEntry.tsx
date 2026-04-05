@@ -1,3 +1,6 @@
+/**
+ * Quick time entry form and recent entries table for the employee time page.
+ */
 "use client";
 
 import { useState } from "react";

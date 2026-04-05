@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/service-contracts — Q360 service contracts with optional query filters.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceContracts } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";

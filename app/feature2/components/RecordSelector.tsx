@@ -1,3 +1,6 @@
+/**
+ * Fetches `/api/feature2/records` and lets the user pick a dispatch for automation.
+ */
 "use client";
 
 import { useEffect, useState } from "react";

@@ -1,3 +1,6 @@
+/**
+ * Snapshot-style checks that prompt builders in `emailPrompts` include expected sections and variables.
+ */
 import { describe, it, expect } from "vitest";
 import {
   overdueBatchSystemPrompt,

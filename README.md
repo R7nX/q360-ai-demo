@@ -19,6 +19,17 @@ The app scaffold and local tooling are in place, including:
 - Next.js 16 + React 19 project structure
 - Local SQLite mock database (`mock.db`)
 - Seeder script that pulls Q360 table schema and generates synthetic rows
+- Feature 2 shared AI routes:
+  - `/api/ai/draft-email`
+  - `/api/ai/summarize`
+  - `/api/ai/recommend`
+  - `/api/ai/status-report`
+  - `/api/ai/smart-reply`
+- Feature 2 shared AI components:
+  - `DataSummary`
+  - `ActionRecommender`
+  - `StatusReport`
+  - `SmartReply`
 - Core planning docs (`docs/plans/PROJECT_MASTER_PLAN.md`, `docs/reference/API_STRUCTURE.md`, `docs/plans/FEATURE_TAB_MAPPING.md`)
 
 ## Tech Stack
@@ -73,7 +84,7 @@ Defined in `.env.example`:
 - `Q360_BASE_URL` — Q360 API base URL (sandbox)
 - `Q360_API_USERNAME` — Q360 API user
 - `Q360_API_PASSWORD` — Q360 API password
-- `ANTHROPIC_API_KEY` — AI provider key
+- `GEMINI_API_KEY` — AI provider key
 - `USE_MOCK_DATA` — `true` to use local SQLite data path
 - `DATABASE_URL` — SQLite file path for local dev
 
@@ -99,3 +110,4 @@ Defined in `.env.example`:
 
 - This project is a **demo/prototype**, not production software.
 - Keep secrets in `.env.local` only (never commit credentials).
+

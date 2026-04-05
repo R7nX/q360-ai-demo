@@ -1,3 +1,6 @@
+/**
+ * Card UI for a single overdue dispatch alert (tier styling, meta rows, problem text).
+ */
 import type { OverdueAlert } from "@/types/feature2";
 import { AlertTriangle, Clock, User, MapPin, Wrench } from "lucide-react";
 

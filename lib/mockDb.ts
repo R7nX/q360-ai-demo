@@ -1,3 +1,6 @@
+/**
+ * Read-only SQLite accessors for local `mock.db` (dispatches, customers, sites, time bills, tasks).
+ */
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
@@ -213,11 +216,8 @@ export function getTasksFromMockDb(userid?: string): Record<string, unknown>[] |
   if (!db) return null;
 
   try {
-    const tableName = hasTable(db, "TASKS")
-      ? "TASKS"
-      : hasTable(db, "tasks")
-        ? "tasks"
-        : null;
+    const tableName =
+      ["TASKS", "tasks", "task"].find((table) => hasTable(db, table)) ?? null;
 
     if (!tableName) return null;
 

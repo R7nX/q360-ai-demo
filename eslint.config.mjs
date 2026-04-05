@@ -1,3 +1,6 @@
+/**
+ * ESLint flat config: Next.js core-web-vitals + TypeScript presets and build-output ignores.
+ */
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";

@@ -363,6 +363,32 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - ran `npm run build` and captured the blocking failures instead of ignoring them
   - verified the new empty states and route fallback behavior are represented in the employee code paths
 
+## Stage 7: Part 2 Integration Pass (Update)
+
+- Date: 2026-04-05
+- Status: complete
+- Work completed:
+  - replaced the Stage 7 "Smart Reply pending" placeholder in the dispatch detail view with live shared Team 2 components (`SmartReply` and `ActionRecommender`)
+  - migrated `components/ai/employee/EmployeeEmailAssistant.tsx` from the legacy `POST /api/feature2/generate` flow to the shared `POST /api/ai/draft-email?format=json` contract
+  - integrated shared Team 2 summarization support on `/home` by adding `DataSummary` with employee context
+  - integrated shared Team 2 recommendation support on `/workflows` by adding `ActionRecommender` while preserving the existing local `WorkflowGuide` fallback experience
+  - kept all Team 3 pages usable even if AI calls fail by relying on existing component-level loading and error states
+- Files touched:
+  - `app/(employee)/my-dispatches/[dispatchNo]/page.tsx`
+  - `components/ai/employee/EmployeeEmailAssistant.tsx`
+  - `app/(employee)/home/page.tsx`
+  - `app/(employee)/workflows/page.tsx`
+  - `docs/reports/report.md`
+- Data mode:
+  - internal api
+- Blockers / dependencies:
+  - shared AI behavior still depends on environment readiness (`GEMINI_API_KEY` and reachable provider)
+  - existing repo-level production build constraints from earlier Stage 8 notes may still apply outside this integration scope
+- Next step:
+  - run end-to-end employee route verification (`/home`, `/my-dispatches/[dispatchNo]`, `/workflows`) with AI routes enabled and capture any UX polish gaps
+- Tested:
+  - ran `npm run lint` successfully after each integration step
+
 ## Documentation Cleanup: Seed Script Consolidation
 
 - Date: 2026-04-05

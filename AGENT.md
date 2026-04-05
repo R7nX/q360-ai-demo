@@ -251,6 +251,18 @@ Each team works **only** in their designated directories. See `docs/plans/PROJEC
 
 ---
 
+## Cross-Platform Development
+
+This repo is developed on **Windows, macOS, and Linux**. CI runs on **Ubuntu (Linux)**. Follow these rules to avoid cross-platform breakage:
+
+1. **No platform-specific shebangs or scripts.** Never use Windows paths in shebangs (e.g., `#!C:/Windows/...`) or `.cmd`/`.bat` files. Use portable `#!/usr/bin/env node` or `#!/usr/bin/env bash` shebangs.
+2. **Lock file drift.** `npm install` on Windows/macOS may not resolve Linux-specific optional native binaries (e.g., `lightningcss-linux-x64-gnu`, `@next/swc-linux-x64-gnu`). CI uses `npm ci || npm install` as a fallback to handle this — **do not change that fallback**.
+3. **No platform-specific dev dependencies.** Don't add OS-gated packages as workarounds. If CI needs a native binary, the `npm ci || npm install` fallback handles it.
+4. **ESLint compatibility.** `eslint-config-next` plugins do not yet support ESLint 10+. Keep `eslint` pinned to `^9`. Do not approve Dependabot PRs that bump eslint to v10+ until `eslint-config-next` officially supports it.
+5. **Test hooks and scripts locally** on at least one non-Windows platform (or in CI) before committing.
+
+---
+
 ## Rules for AI Assistants
 
 1. **Credentials stay server-side.** All Q360 and Claude API calls happen inside Next.js API Routes. Never put secrets in client components or `use client` files.
