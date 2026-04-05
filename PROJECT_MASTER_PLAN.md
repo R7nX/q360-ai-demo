@@ -1183,15 +1183,15 @@ Handle these as config/prompt changes — the API contract stays the same.
 ### Team 2 Files Checklist
 
 ```
-[ ] lib/agentClient.ts                    (Gemini client)
-[ ] app/api/ai/draft-email/route.ts
+[x] lib/agentClient.ts                    (Gemini client)
+[x] app/api/ai/draft-email/route.ts
 [ ] app/api/ai/status-report/route.ts
 [ ] app/api/ai/smart-reply/route.ts
 [ ] app/api/ai/summarize/route.ts
 [ ] app/api/ai/recommend/route.ts
 [ ] app/api/n8n/webhook/route.ts
 [ ] components/ai/AiToolWrapper.tsx
-[ ] components/ai/EmailDrafter.tsx
+[x] components/ai/EmailDrafter.tsx
 [ ] components/ai/StatusReport.tsx
 [ ] components/ai/SmartReply.tsx
 [ ] components/ai/DataSummary.tsx

@@ -4,7 +4,6 @@ import {
   getAllCustomersFromMockDb,
   getAllSitesFromMockDb,
 } from "@/lib/mockDb";
-import { getDispatchList } from "@/lib/q360Client";
 import {
   overdueBatchSystemPrompt,
   overdueBatchUserPrompt,
@@ -17,8 +16,6 @@ import {
 } from "@/lib/q360Client";
 import type { Dispatch, Customer, Site } from "@/types/q360";
 import type { OverdueApiResponse, OverdueAnalysisResult } from "@/types/feature2";
-
-const USE_MOCK = process.env.USE_MOCK_DATA === "true";
 
 const OPEN_STATUSES = new Set(["OPEN", "IN PROGRESS", "PENDING", "ON HOLD"]);
 
@@ -49,19 +46,9 @@ export async function POST(): Promise<Response> {
     let customers: Record<string, Customer> = {};
     let sites: Record<string, Site> = {};
 
-    if (USE_MOCK) {
-      allDispatches = getDispatchesFromMockDb() ?? FALLBACK_DISPATCHES;
-      customers = { ...FALLBACK_CUSTOMERS, ...getAllCustomersFromMockDb() };
-      sites = { ...FALLBACK_SITES, ...getAllSitesFromMockDb() };
-    } else {
-      try {
-        allDispatches = await getDispatchList();
-      } catch {
-        allDispatches = FALLBACK_DISPATCHES;
-        customers = FALLBACK_CUSTOMERS;
-        sites = FALLBACK_SITES;
-      }
-    }
+    allDispatches = (await getDispatchesFromMockDb()) ?? FALLBACK_DISPATCHES;
+    customers = { ...FALLBACK_CUSTOMERS, ...(await getAllCustomersFromMockDb()) };
+    sites = { ...FALLBACK_SITES, ...(await getAllSitesFromMockDb()) };
 
     const openDispatches = allDispatches.filter((d) =>
       OPEN_STATUSES.has(d.statuscode?.toUpperCase())

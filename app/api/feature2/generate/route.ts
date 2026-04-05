@@ -1,10 +1,6 @@
 import { NextRequest } from "next/server";
 import { generateStream } from "@/lib/agentClient";
 import {
-  getDispatchById,
-  getCustomerByNo,
-  getSiteByNo,
-  getTimeBillsByDispatch,
   formatDispatchForPrompt,
   FALLBACK_DISPATCHES,
   FALLBACK_CUSTOMERS,
@@ -28,8 +24,6 @@ import {
 } from "@/lib/emailPrompts";
 import type { GenerateRequest } from "@/types/feature2";
 import type { Dispatch, Customer, Site, TimeBill } from "@/types/q360";
-
-const USE_MOCK = process.env.USE_MOCK_DATA === "true";
 
 export async function POST(request: NextRequest) {
   let body: GenerateRequest;
@@ -59,45 +53,20 @@ export async function POST(request: NextRequest) {
     let site: Site | null = null;
     let timeBills: TimeBill[] = [];
 
-    if (USE_MOCK) {
-      // Try SQLite mock.db first
-      dispatch = getDispatchByIdFromMockDb(recordId);
-      if (dispatch) {
-        customer = getCustomerFromMockDb(dispatch.customerno);
-        site = getSiteFromMockDb(dispatch.siteno);
-        timeBills = getTimeBillsFromMockDb(recordId) ?? [];
-      }
+    dispatch = await getDispatchByIdFromMockDb(recordId);
+    if (dispatch) {
+      customer = await getCustomerFromMockDb(dispatch.customerno);
+      site = await getSiteFromMockDb(dispatch.siteno);
+      timeBills = (await getTimeBillsFromMockDb(recordId)) ?? [];
+    }
 
-      // Fall back to hardcoded demo data
-      if (!dispatch) {
-        dispatch =
-          FALLBACK_DISPATCHES.find((d) => d.dispatchno === recordId) ?? null;
-        if (dispatch) {
-          customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
-          site = FALLBACK_SITES[dispatch.siteno] ?? null;
-        }
-      }
-    } else {
-      try {
-        dispatch = await getDispatchById(recordId);
-        if (dispatch) {
-          const [c, s, tb] = await Promise.all([
-            getCustomerByNo(dispatch.customerno),
-            getSiteByNo(dispatch.siteno),
-            getTimeBillsByDispatch(recordId),
-          ]);
-          customer = c;
-          site = s;
-          timeBills = tb;
-        }
-      } catch (apiError) {
-        console.error("Q360 API failed, trying fallback:", apiError);
-        dispatch =
-          FALLBACK_DISPATCHES.find((d) => d.dispatchno === recordId) ?? null;
-        if (dispatch) {
-          customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
-          site = FALLBACK_SITES[dispatch.siteno] ?? null;
-        }
+    // Fall back to hardcoded demo data
+    if (!dispatch) {
+      dispatch =
+        FALLBACK_DISPATCHES.find((d) => d.dispatchno === recordId) ?? null;
+      if (dispatch) {
+        customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
+        site = FALLBACK_SITES[dispatch.siteno] ?? null;
       }
     }
 
