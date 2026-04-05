@@ -1,6 +1,7 @@
 /**
  * Employee home dashboard: briefing, open dispatches, tasks, and quick time entry.
  */
+import DataSummary from "@/components/ai/DataSummary";
 import { DailyBriefing } from "@/components/ai/employee/DailyBriefing";
 import { DispatchCard } from "@/components/ai/employee/DispatchCard";
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";
@@ -12,6 +13,7 @@ import Link from "next/link";
 export default async function EmployeeHomePage() {
   const data = await getEmployeeHomeData();
   const openTaskCount = data.tasks.filter((task) => !task.completed).length;
+  const primaryDispatchId = data.dispatches[0]?.dispatchno ?? "";
 
   return (
     <>
@@ -27,6 +29,20 @@ export default async function EmployeeHomePage() {
             points={data.briefingPoints}
             dispatchCount={data.dispatches.length}
             taskCount={openTaskCount}
+          />
+
+          <DataSummary
+            entityType="dispatch"
+            entityId={primaryDispatchId}
+            intent="summary"
+            audience="technician"
+            tone="friendly"
+            context={{
+              currentUser: data.currentUser,
+              dispatchCount: data.dispatches.length,
+              openTaskCount,
+              briefingPoints: data.briefingPoints,
+            }}
           />
 
           <div className="flex flex-wrap gap-3">
