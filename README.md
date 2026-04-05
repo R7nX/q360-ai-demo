@@ -129,7 +129,7 @@ Current Team 1 note:
 
 - Feature 1 now reads from `mock.db` first in mock mode
 - `Q360_MOCK_MODE` is still accepted as a legacy fallback, but `USE_MOCK_DATA` is the primary switch
-- bundled Team 1 fixture files are now fallback-only when `mock.db` does not contain compatible tables
+- Team 1 mock mode now requires actual compatible SQLite tables in `mock.db`; there is no bundled row fallback anymore
 
 ## NPM scripts
 
@@ -155,6 +155,7 @@ Current Team 1 note:
 - `feat1-md/PLAN.md` — current Team 1 execution plan in the master repo
 - `feat1-md/PORT_PROGRESS.md` — Team 1 port status and next-stage tracker
 - `feat1-md/CURRENT_API_LIMITATION.md` — current live tenant access constraints
+- `feat1-md/ACTUAL_TABLE_REQUIREMENTS.md` — actual table/schema checklist for Feature 1
 - `AGENT.md` — whole-project assistant and implementation guardrails
 - `feat1-md/AGENTS.md` — Team 1-specific development guide
 

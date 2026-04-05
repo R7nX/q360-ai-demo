@@ -62,7 +62,6 @@ Current Team 1 backend/domain foundation lives in:
 - `lib/domain/**`
 - `lib/rules/business-rules.ts`
 - `lib/sqlite.ts`
-- `mock/q360/**`
 
 Current Team 1 verification status:
 
@@ -101,7 +100,7 @@ Practical implication:
 Current mock implication:
 
 - in mock mode, Team 1 now prefers SQLite data from `mock.db`
-- bundled fixture rows are fallback-only when `mock.db` does not contain compatible Team 1 tables
+- Team 1 now requires actual compatible SQLite tables in `mock.db`
 - minimum seed for the current manager page:
   - `projects`
   - `projectschedule`

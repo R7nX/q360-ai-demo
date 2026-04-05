@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { Q360RecordRow } from "@/lib/domain/normalizers";
 import { fetchQ360Json, isMockMode } from "@/lib/q360/client";
 import { listMockProjectRows, listMockTaskRows } from "@/lib/q360/mock-sqlite";
-import { mockProjectRows, mockTaskRows } from "@/mock/q360/project-monitor";
 
 type ListActionResult = {
   rows: Q360RecordRow[];
@@ -20,6 +19,21 @@ const rawListActionPayloadSchema = z.object({
 });
 
 const CACHE_TTL_MS = 30_000;
+const PROJECT_TABLE_HINTS = [
+  "PROJECT",
+  "PROJECTS",
+  "LDVIEW_PROJECT",
+  "LDVIEW_PROJECTSNAPSHOT",
+  "LDVIEW_PROJECTDETAIL",
+] as const;
+const TASK_TABLE_HINTS = [
+  "TASK",
+  "TASKS",
+  "LDVIEW_TASK",
+  "TASKCONSOLEVIEW",
+  "PROJECTSCHEDULE",
+  "PROJECTTASKHISTORY",
+] as const;
 
 const listActionCache = new Map<string, CacheEntry>();
 const inFlightListActionRequests = new Map<string, Promise<ListActionResult>>();
@@ -104,6 +118,15 @@ function sortRowsByDate(
   });
 }
 
+function buildMissingMockTableError(
+  entityName: "Project" | "Task",
+  tableHints: readonly string[],
+): Error {
+  return new Error(
+    `Mock mode requires actual SQLite table(s) for ${entityName} reads. Seed one of: ${tableHints.join(", ")}.`,
+  );
+}
+
 export async function listProjectRows(
   options: { projectNo?: string } = {},
 ): Promise<ListActionResult> {
@@ -121,25 +144,18 @@ export async function listProjectRows(
   const nextRequest = (async () => {
     if (isMockMode()) {
       const sqliteResult = listMockProjectRows(options);
-      const result = sqliteResult
-        ? {
-            rows: sortRowsByDate(
-              sqliteResult.rows,
-              ["enddate", "installdate", "startdate"],
-              "asc",
-            ),
-            sourceName: sqliteResult.sourceName,
-          }
-        : {
-            rows: sortRowsByDate(
-              options.projectNo
-                ? mockProjectRows.filter((row) => row.projectno === options.projectNo)
-                : mockProjectRows,
-              ["enddate", "installdate", "startdate"],
-              "asc",
-            ),
-            sourceName: "fixtures:Project",
-          };
+      if (!sqliteResult) {
+        throw buildMissingMockTableError("Project", PROJECT_TABLE_HINTS);
+      }
+
+      const result = {
+        rows: sortRowsByDate(
+          sqliteResult.rows,
+          ["enddate", "installdate", "startdate"],
+          "asc",
+        ),
+        sourceName: sqliteResult.sourceName,
+      };
 
       setCachedValue(cacheKey, result);
       return result;
@@ -187,21 +203,14 @@ export async function listTaskRows(
   const nextRequest = (async () => {
     if (isMockMode()) {
       const sqliteResult = listMockTaskRows(options);
-      const result = sqliteResult
-        ? {
-            rows: sortRowsByDate(sqliteResult.rows, ["enddate"], "asc"),
-            sourceName: sqliteResult.sourceName,
-          }
-        : {
-            rows: sortRowsByDate(
-              options.projectNo
-                ? mockTaskRows.filter((row) => row.projectno === options.projectNo)
-                : mockTaskRows,
-              ["enddate"],
-              "asc",
-            ),
-            sourceName: "fixtures:Task",
-          };
+      if (!sqliteResult) {
+        throw buildMissingMockTableError("Task", TASK_TABLE_HINTS);
+      }
+
+      const result = {
+        rows: sortRowsByDate(sqliteResult.rows, ["enddate"], "asc"),
+        sourceName: sqliteResult.sourceName,
+      };
 
       setCachedValue(cacheKey, result);
       return result;

@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { Q360RecordRow } from "@/lib/domain/normalizers";
 import { fetchQ360Json, isMockMode } from "@/lib/q360/client";
 import { listMockRecordRows } from "@/lib/q360/mock-sqlite";
-import { mockPhase1RowsBySource } from "@/mock/q360/phase1";
 
 export type RecordListFilter = {
   field: string;
@@ -46,139 +45,10 @@ function normalizeSourceName(sourceName: string): string {
   return sourceName.trim().toUpperCase();
 }
 
-function normalizeRecordValue(value: unknown): string | number | null {
-  if (value === undefined || value === null || value === "") {
-    return null;
-  }
-
-  const numericValue =
-    typeof value === "number" ? value : Number(String(value).replace(/,/g, ""));
-  if (Number.isFinite(numericValue) && String(value).trim() !== "") {
-    return numericValue;
-  }
-
-  return String(value);
-}
-
-function getRowValue(row: Q360RecordRow, fieldName: string): unknown | null {
-  const directValue = row[fieldName];
-  if (directValue !== undefined) {
-    return directValue;
-  }
-
-  const lowerFieldName = fieldName.toLowerCase();
-  for (const [key, value] of Object.entries(row)) {
-    if (key.toLowerCase() === lowerFieldName) {
-      return value;
-    }
-  }
-
-  return null;
-}
-
-function compareValues(left: unknown, right: unknown): number {
-  const normalizedLeft = normalizeRecordValue(left);
-  const normalizedRight = normalizeRecordValue(right);
-
-  if (normalizedLeft === null && normalizedRight === null) {
-    return 0;
-  }
-  if (normalizedLeft === null) {
-    return 1;
-  }
-  if (normalizedRight === null) {
-    return -1;
-  }
-
-  if (typeof normalizedLeft === "number" && typeof normalizedRight === "number") {
-    return normalizedLeft - normalizedRight;
-  }
-
-  return String(normalizedLeft).localeCompare(String(normalizedRight));
-}
-
-function applyFilter(row: Q360RecordRow, filter: RecordListFilter): boolean {
-  const value = getRowValue(row, filter.field);
-  const normalizedValue = normalizeRecordValue(value);
-  const normalizedFilterValue = normalizeRecordValue(filter.value);
-
-  switch (filter.op) {
-    case "=":
-      return normalizedValue === normalizedFilterValue;
-    case "!=":
-      return normalizedValue !== normalizedFilterValue;
-    case "<":
-      return compareValues(normalizedValue, normalizedFilterValue) < 0;
-    case ">":
-      return compareValues(normalizedValue, normalizedFilterValue) > 0;
-    case "<=":
-      return compareValues(normalizedValue, normalizedFilterValue) <= 0;
-    case ">=":
-      return compareValues(normalizedValue, normalizedFilterValue) >= 0;
-    case "isnull":
-      return normalizedValue === null;
-    case "isnotnull":
-      return normalizedValue !== null;
-    case "like": {
-      if (normalizedValue === null || normalizedFilterValue === null) {
-        return false;
-      }
-
-      const escapedPattern = String(normalizedFilterValue)
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-        .replace(/%/g, ".*")
-        .replace(/_/g, ".");
-      const matcher = new RegExp(`^${escapedPattern}$`, "i");
-      return matcher.test(String(normalizedValue));
-    }
-  }
-}
-
-function applyMockQuery(
-  sourceName: string,
-  request: RecordListRequest,
-): Q360RecordListResult {
-  const normalizedSourceName = normalizeSourceName(sourceName);
-  const sourceRows = mockPhase1RowsBySource[normalizedSourceName] ?? [];
-  const filters = request.filters ?? [];
-  const limit = request.limit ?? 100;
-  const offset = request.offset ?? 0;
-  const orderBy = request.orderBy ?? [];
-
-  const filteredRows = sourceRows.filter((row) =>
-    filters.every((filter) => applyFilter(row, filter)),
+function buildMissingMockRecordSourceError(sourceName: string): Error {
+  return new Error(
+    `Mock mode requires an actual SQLite table named ${normalizeSourceName(sourceName)} in DATABASE_URL-backed mock.db.`,
   );
-
-  const sortedRows = [...filteredRows].sort((left, right) => {
-    for (const sortRule of orderBy) {
-      const valueComparison = compareValues(
-        getRowValue(left, sortRule.field),
-        getRowValue(right, sortRule.field),
-      );
-
-      if (valueComparison !== 0) {
-        return sortRule.dir === "desc" ? -valueComparison : valueComparison;
-      }
-    }
-
-    return 0;
-  });
-
-  const projectedRows = sortedRows.slice(offset, offset + limit).map((row) => {
-    const projectedRow: Q360RecordRow = {};
-    for (const column of request.columns) {
-      projectedRow[column] = getRowValue(row, column);
-    }
-    return projectedRow;
-  });
-
-  return {
-    hasMore: offset + limit < filteredRows.length,
-    limit,
-    offset,
-    rows: projectedRows,
-    sourceName: `fixtures:${normalizedSourceName}`,
-  };
 }
 
 export function createRecordListBody(request: RecordListRequest) {
@@ -198,10 +68,12 @@ export async function listQ360Records(
   const normalizedSourceName = normalizeSourceName(sourceName);
 
   if (isMockMode()) {
-    return (
-      listMockRecordRows(normalizedSourceName, request) ??
-      applyMockQuery(normalizedSourceName, request)
-    );
+    const sqliteResult = listMockRecordRows(normalizedSourceName, request);
+    if (!sqliteResult) {
+      throw buildMissingMockRecordSourceError(normalizedSourceName);
+    }
+
+    return sqliteResult;
   }
 
   const body = createRecordListBody(request);

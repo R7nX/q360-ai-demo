@@ -1,5 +1,9 @@
+import Database from "better-sqlite3";
+import fs from "fs";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import os from "os";
+import path from "path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
@@ -11,6 +15,48 @@ import {
 } from "@/lib/q360/schema-discovery";
 
 const server = setupServer();
+const tempDirectories = new Set<string>();
+
+function createDiscoveryMockDb(): string {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "q360-team1-schema-discovery-"));
+  tempDirectories.add(tempDir);
+
+  const dbPath = path.join(tempDir, "feature1.sqlite");
+  const db = new Database(dbPath);
+
+  try {
+    db.exec(`
+      CREATE TABLE projects (
+        PROJECTNO TEXT PRIMARY KEY,
+        TITLE TEXT,
+        CUSTOMERNO TEXT,
+        STATUSCODE TEXT
+      );
+      CREATE TABLE projectschedule (
+        PROJECTSCHEDULENO TEXT PRIMARY KEY,
+        PROJECTNO TEXT,
+        TITLE TEXT,
+        STATUSCODE TEXT
+      );
+      CREATE TABLE projectevents (
+        PROJEVENTNO TEXT PRIMARY KEY,
+        PROJECTNO TEXT,
+        TYPE TEXT,
+        COMMENT TEXT
+      );
+      CREATE TABLE timebill (
+        TIMEBILLNO TEXT PRIMARY KEY,
+        PROJECTNO TEXT,
+        TIMEBILLED REAL,
+        CATEGORY TEXT
+      );
+    `);
+  } finally {
+    db.close();
+  }
+
+  return dbPath;
+}
 
 describe("schema discovery", () => {
   beforeAll(() => {
@@ -22,6 +68,10 @@ describe("schema discovery", () => {
     clearQ360DiscoveryCache();
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+    for (const tempDirectory of tempDirectories) {
+      fs.rmSync(tempDirectory, { force: true, recursive: true });
+    }
+    tempDirectories.clear();
   });
 
   afterAll(() => {
@@ -162,8 +212,10 @@ describe("schema discovery", () => {
     expect(schemaRequestCount).toBe(1);
   });
 
-  it("builds a Phase 0 discovery summary in mock mode", async () => {
+  it("builds a Phase 0 discovery summary from actual SQLite tables in mock mode", async () => {
+    const dbPath = createDiscoveryMockDb();
     vi.stubEnv("Q360_MOCK_MODE", "true");
+    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
 
     const summary = await getPhase0DiscoverySummary();
 
@@ -171,11 +223,12 @@ describe("schema discovery", () => {
     expect(summary.mockMode).toBe(true);
     expect(summary.candidateSourceCount).toBeGreaterThan(10);
     expect(summary.businessAreas).toHaveLength(5);
-    expect(summary.businessAreas[0]?.recommendedSource).toBe("LDView_Project");
-    expect(summary.businessAreas[0]?.candidates[0]?.primaryKey).toBeTruthy();
+    expect(summary.tableListCount).toBe(4);
+    expect(summary.businessAreas[0]?.recommendedSource).toBe("PROJECTS");
+    expect(summary.businessAreas[0]?.candidates.find((candidate) => candidate.sourceName === "PROJECTS")?.primaryKey).toBe("PROJECTNO");
     expect(
-      summary.businessAreas.find((area) => area.areaKey === "commercialPipeline")
-        ?.matchedSourceCount,
+      summary.businessAreas.find((area) => area.areaKey === "projectDelivery")
+        ?.existingCandidateCount,
     ).toBeGreaterThan(0);
   });
 

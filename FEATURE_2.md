@@ -169,7 +169,7 @@ Request body: `{ recordType, recordId, automationType, tone }`
 
 Steps:
 1. Validate `recordId` and `tone` are present
-2. Fetch dispatch from Q360 (or mock DB / fallback data)
+2. Fetch dispatch from Q360 or `mock.db`
 3. Call `formatDispatchForPrompt()` to build clean text block
 4. Build prompt with system + user parts
 5. Call AI with streaming, return `ReadableStream` to browser
@@ -286,7 +286,7 @@ A dispatch is overdue if computed days > 0.
 
 Steps:
 1. `today = new Date()`
-2. `fetchAllOpenDispatches()` — paginated Q360 fetch (or fallback data)
+2. `fetchAllOpenDispatches()` — paginated Q360 fetch (or `mock.db` rows in mock mode)
 3. If 0 dispatches: return empty state payload
 4. For each dispatch: `computeDaysOverdue(dispatch, today)`
 5. Filter to overdue only (`daysOverdue > 0`)
@@ -408,7 +408,7 @@ Each card: urgency badge + dispatch number + days overdue, customer name, site +
 |---|---|
 | Null Q360 field | `formatDispatchForPrompt()` converts null/empty to `[Not provided]`; AI omits gracefully |
 | No `SUBJECT:` line from AI | Fall back to `"Service Update — Dispatch #ID"`; log `console.warn` |
-| Q360 down | Return fallback static dispatch records from `q360Client.ts`; never break the demo |
+| Q360 down | Return HTTP 502 in live mode; in mock mode require actual `mock.db` rows |
 | AI stream interrupted | Push error sentinel to stream; frontend shows inline error, not broken text |
 
 ### Automation 3
@@ -420,7 +420,7 @@ Each card: urgency badge + dispatch number + days overdue, customer name, site +
 | 50+ overdue dispatches | Cap at 50 in API route; show truncation notice in UI |
 | Q360 returns no dispatches | Check status code filter; return empty state payload |
 | AI returns invalid JSON | Strip markdown fences, retry parse; if still fails, return `rawText` to frontend |
-| Q360 down during demo | Same fallback approach as Automation 1 — seed static overdue dispatch data |
+| Q360 down during demo | Use mock mode with seeded `mock.db` dispatch rows or show the live error state |
 
 ---
 

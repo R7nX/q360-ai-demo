@@ -31,6 +31,222 @@ function formatTimestamp(value: string | null | undefined): string {
   }).format(date);
 }
 
+function formatNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "--";
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "--";
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    currency: "USD",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(value);
+}
+
+function formatPercent(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "--";
+  }
+
+  return `${new Intl.NumberFormat(undefined, {
+    maximumFractionDigits: 0,
+  }).format(value)}%`;
+}
+
+function formatValue(value: string | null | undefined): string {
+  return value && value.trim().length > 0 ? value : "--";
+}
+
+function formatNamedReference(
+  primaryValue: string | null | undefined,
+  referenceValue: string | null | undefined,
+): string {
+  const primary = primaryValue?.trim();
+  const reference = referenceValue?.trim();
+
+  if (primary && reference) {
+    return `${primary} (${reference})`;
+  }
+
+  return primary ?? reference ?? "--";
+}
+
+function toProgressWidth(value: number | null | undefined): number {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, value));
+}
+
+function getToneClasses(tone: "amber" | "blue" | "emerald" | "rose" | "slate") {
+  switch (tone) {
+    case "amber":
+      return {
+        accent: "bg-amber-500",
+        pill: "border-amber-200 bg-amber-50 text-amber-800",
+        surface: "border-amber-200 bg-amber-50",
+        text: "text-amber-900",
+      };
+    case "blue":
+      return {
+        accent: "bg-blue-500",
+        pill: "border-blue-200 bg-blue-50 text-blue-800",
+        surface: "border-blue-200 bg-blue-50",
+        text: "text-blue-900",
+      };
+    case "emerald":
+      return {
+        accent: "bg-emerald-500",
+        pill: "border-emerald-200 bg-emerald-50 text-emerald-800",
+        surface: "border-emerald-200 bg-emerald-50",
+        text: "text-emerald-900",
+      };
+    case "rose":
+      return {
+        accent: "bg-rose-500",
+        pill: "border-rose-200 bg-rose-50 text-rose-800",
+        surface: "border-rose-200 bg-rose-50",
+        text: "text-rose-900",
+      };
+    case "slate":
+      return {
+        accent: "bg-slate-500",
+        pill: "border-slate-200 bg-slate-50 text-slate-700",
+        surface: "border-slate-200 bg-slate-50",
+        text: "text-slate-900",
+      };
+  }
+}
+
+function HighlightChip({
+  label,
+  tone = "slate",
+  value,
+}: {
+  label: string;
+  tone?: "amber" | "blue" | "emerald" | "rose" | "slate";
+  value: string;
+}) {
+  const classes = getToneClasses(tone);
+
+  return (
+    <div className={`min-w-0 rounded-2xl border px-3 py-3 ${classes.pill}`}>
+      <div className="break-words text-[10px] font-semibold uppercase tracking-[0.14em] leading-snug opacity-80">
+        {label}
+      </div>
+      <div className={`mt-1 break-words text-sm font-semibold leading-snug ${classes.text}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function HighlightMetric({
+  label,
+  note,
+  tone = "slate",
+  value,
+}: {
+  label: string;
+  note?: string;
+  tone?: "amber" | "blue" | "emerald" | "rose" | "slate";
+  value: string;
+}) {
+  const classes = getToneClasses(tone);
+
+  return (
+    <div className={`min-w-0 overflow-hidden rounded-2xl border p-4 ${classes.surface}`}>
+      <div className="flex items-center gap-2">
+        <span className={`h-2.5 w-2.5 rounded-full ${classes.accent}`} />
+        <div className="break-words text-[11px] font-semibold uppercase tracking-[0.12em] leading-snug text-slate-500">
+          {label}
+        </div>
+      </div>
+      <div
+        className={`mt-3 break-normal text-[clamp(1rem,1.3vw,1.375rem)] font-bold leading-[1.1] tracking-tight ${classes.text}`}
+      >
+        {value}
+      </div>
+      {note ? <div className="mt-1 break-words text-xs leading-5 text-slate-600">{note}</div> : null}
+    </div>
+  );
+}
+
+function ProgressHighlight({
+  label,
+  note,
+  tone = "emerald",
+  value,
+}: {
+  label: string;
+  note?: string;
+  tone?: "amber" | "blue" | "emerald" | "rose" | "slate";
+  value: number | null | undefined;
+}) {
+  const classes = getToneClasses(tone);
+  const width = toProgressWidth(value);
+
+  return (
+    <div className={`min-w-0 overflow-hidden rounded-2xl border p-4 ${classes.surface}`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="break-words text-[11px] font-semibold uppercase tracking-[0.12em] leading-snug text-slate-500">
+            {label}
+          </div>
+          <div className={`mt-2 break-words text-[clamp(1.5rem,2.6vw,2rem)] font-bold leading-tight ${classes.text}`}>
+            {formatPercent(value)}
+          </div>
+        </div>
+        {note ? (
+          <div className="max-w-none break-words text-left text-xs leading-5 text-slate-600 sm:max-w-[11rem] sm:text-right">
+            {note}
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-4 h-2.5 rounded-full bg-white/80">
+        <div
+          className={`h-2.5 rounded-full ${classes.accent}`}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DetailCell({
+  label,
+  tone = "slate",
+  value,
+}: {
+  label: string;
+  tone?: "amber" | "blue" | "emerald" | "rose" | "slate";
+  value: string;
+}) {
+  const classes = getToneClasses(tone);
+
+  return (
+    <div className={`min-w-0 overflow-hidden rounded-2xl border p-3 ${classes.surface}`}>
+      <div className="break-words text-[11px] font-semibold uppercase tracking-[0.12em] leading-snug text-slate-500">
+        {label}
+      </div>
+      <div className={`mt-1 break-words text-sm font-semibold leading-snug ${classes.text}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
 function getProjectStatus(project: {
   atRisk: boolean;
   overdueTaskCount: number;
@@ -85,10 +301,6 @@ function isMockDbSource(value: string | null | undefined): boolean {
   return Boolean(value?.startsWith("mock.db:"));
 }
 
-function isFixtureSource(value: string | null | undefined): boolean {
-  return Boolean(value?.startsWith("fixtures:"));
-}
-
 export default async function Feature1Page() {
   try {
     const overview = await getBusinessOverview({
@@ -101,8 +313,6 @@ export default async function Feature1Page() {
     });
     const usingMockDb =
       isMockDbSource(overview.dataSources.projects) || isMockDbSource(overview.dataSources.tasks);
-    const usingFixtureFallback =
-      isFixtureSource(overview.dataSources.projects) || isFixtureSource(overview.dataSources.tasks);
 
     return (
       <main className="min-h-screen bg-slate-50">
@@ -117,16 +327,12 @@ export default async function Feature1Page() {
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900">
                     {usingMockDb
                       ? "Project and task visibility, backed by mock.db."
-                      : usingFixtureFallback
-                        ? "Project and task visibility, backed by bundled mock fixtures."
-                        : "Project and task visibility, backed by live-safe Q360 reads."}
+                      : "Project and task visibility, backed by live-safe Q360 reads."}
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
                     {usingMockDb
                       ? "This Team 1 page now prefers the local SQLite mock database in mock mode. Seed compatible project and task tables to drive the manager view, then add activity and billing tables for richer recommendations."
-                      : usingFixtureFallback
-                        ? "This Team 1 page is in fallback mock mode because mock.db does not yet have compatible Team 1 tables. Seed project and task tables to replace the bundled fixtures."
-                        : "This first Team 1 page is centered on the confirmed project and task feeds. Service, sales, and accounting will be added in later stages once their live source strategy is locked."}
+                      : "This first Team 1 page is centered on the confirmed project and task feeds. Service, sales, and accounting will be added in later stages once their live source strategy is locked."}
                   </p>
                 </div>
               </div>
@@ -217,7 +423,8 @@ export default async function Feature1Page() {
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-slate-900">Projects</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Top project pressure from the current Team 1 live-safe sources.
+                  Project master context from `PROJECTS`, including ownership, schedule, customer,
+                  site, progress, and budget signals.
                 </p>
               </div>
               <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -225,21 +432,21 @@ export default async function Feature1Page() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 lg:grid-cols-2">
               {overview.projectProgress.projects.map((project) => {
                 const status = getProjectStatus(project);
 
                 return (
                   <article
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+                    className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
                     key={project.id}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
-                          {project.id}
+                        <div className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Project no {project.id}
                         </div>
-                        <h3 className="mt-2 text-lg font-semibold leading-tight text-slate-900">
+                        <h3 className="mt-2 break-words text-lg font-semibold leading-tight text-slate-900">
                           {project.title ?? "Untitled project"}
                         </h3>
                       </div>
@@ -250,52 +457,101 @@ export default async function Feature1Page() {
                       </div>
                     </div>
 
-                    <div className="mt-5 space-y-3 text-sm text-slate-600">
-                      <div className="flex justify-between gap-4">
-                        <span>Customer</span>
-                        <span className="text-right font-medium text-slate-900">
-                          {project.customerName ?? project.customerId ?? "--"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <span>Owner</span>
-                        <span className="text-right font-medium text-slate-900">
-                          {project.ownerId ?? "--"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <span>Due</span>
-                        <span className="text-right font-medium text-slate-900">
-                          {formatDate(project.dueDate)}
-                        </span>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      <HighlightChip
+                        label="Customer"
+                        tone="blue"
+                        value={formatNamedReference(project.customerName, project.customerId)}
+                      />
+                      <HighlightChip label="Site" tone="slate" value={formatValue(project.siteId)} />
+                      <HighlightChip
+                        label="Leader"
+                        tone="emerald"
+                        value={formatValue(project.ownerId)}
+                      />
+                      <HighlightChip
+                        label="Sales rep"
+                        tone="amber"
+                        value={formatValue(project.salesRepId)}
+                      />
+                      <HighlightChip
+                        label="Status"
+                        tone={project.atRisk || project.overdueTaskCount > 0 ? "amber" : "emerald"}
+                        value={formatValue(project.status)}
+                      />
+                    </div>
+
+                    <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
+                      <ProgressHighlight
+                        label="Percent complete"
+                        note={`Status ${formatValue(project.status)} • Next due ${formatDate(project.nextTaskDueDate)}`}
+                        tone={project.atRisk ? "amber" : "emerald"}
+                        value={project.percentComplete}
+                      />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <HighlightMetric
+                          label="Revenue budget"
+                          note="Commercial commitment"
+                          tone="blue"
+                          value={formatCurrency(project.revenueBudget)}
+                        />
+                        <HighlightMetric
+                          label="Hours budget"
+                          note="Planned effort"
+                          tone="slate"
+                          value={formatNumber(project.hoursBudget)}
+                        />
                       </div>
                     </div>
 
-                    <div className="mt-5 grid grid-cols-3 gap-3">
-                      <div className="rounded-2xl bg-slate-50 p-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                          Open
-                        </div>
-                        <div className="mt-1 text-xl font-bold text-slate-900">
-                          {project.openTaskCount}
-                        </div>
-                      </div>
-                      <div className="rounded-2xl bg-amber-50 p-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-700">
-                          Overdue
-                        </div>
-                        <div className="mt-1 text-xl font-bold text-slate-900">
-                          {project.overdueTaskCount}
-                        </div>
-                      </div>
-                      <div className="rounded-2xl bg-blue-50 p-3">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-blue-700">
-                          Next task
-                        </div>
-                        <div className="mt-1 text-sm font-semibold text-slate-900">
-                          {formatDate(project.nextTaskDueDate)}
-                        </div>
-                      </div>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <HighlightMetric
+                        label="Open tasks"
+                        note="Current workload"
+                        tone="slate"
+                        value={formatNumber(project.openTaskCount)}
+                      />
+                      <HighlightMetric
+                        label="Overdue tasks"
+                        note="Needs attention"
+                        tone={project.overdueTaskCount > 0 ? "rose" : "emerald"}
+                        value={formatNumber(project.overdueTaskCount)}
+                      />
+                      <HighlightMetric
+                        label="Task count"
+                        note="All linked work"
+                        tone="slate"
+                        value={formatNumber(project.taskCount)}
+                      />
+                      <HighlightMetric
+                        label="Next task due"
+                        note="Closest upcoming commitment"
+                        tone={project.overdueTaskCount > 0 ? "amber" : "blue"}
+                        value={formatDate(project.nextTaskDueDate)}
+                      />
+                    </div>
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <DetailCell
+                        label="Project start"
+                        tone="blue"
+                        value={formatDate(project.projectStartDate)}
+                      />
+                      <DetailCell
+                        label="Start date"
+                        tone="slate"
+                        value={formatDate(project.startDate)}
+                      />
+                      <DetailCell
+                        label="End date"
+                        tone={project.atRisk ? "amber" : "blue"}
+                        value={formatDate(project.endDate)}
+                      />
+                      <DetailCell
+                        label="Last activity"
+                        tone="slate"
+                        value={formatTimestamp(project.lastActivityAt)}
+                      />
                     </div>
                   </article>
                 );
@@ -308,7 +564,8 @@ export default async function Feature1Page() {
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-slate-900">Tasks</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Overdue work first, then due-today commitments, then open follow-ups.
+                  Work-plan context from `PROJECTSCHEDULE`, including assignment, scheduling,
+                  effort, priority, WBS, and completion signals.
                 </p>
               </div>
               <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -316,21 +573,21 @@ export default async function Feature1Page() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-5 lg:grid-cols-2">
               {overview.followUps.tasks.map((task) => {
                 const status = getTaskStatus(task);
 
                 return (
                   <article
-                    className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+                    className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
                     key={task.id}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
-                          {task.id}
+                        <div className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Task no {task.id}
                         </div>
-                        <h3 className="mt-2 text-lg font-semibold leading-tight text-slate-900">
+                        <h3 className="mt-2 break-words text-lg font-semibold leading-tight text-slate-900">
                           {task.title ?? "Untitled task"}
                         </h3>
                       </div>
@@ -341,30 +598,89 @@ export default async function Feature1Page() {
                       </div>
                     </div>
 
-                    <div className="mt-5 space-y-3 text-sm text-slate-600">
-                      <div className="flex justify-between gap-4">
-                        <span>Project</span>
-                        <span className="text-right font-medium text-slate-900">
-                          {task.projectTitle ?? task.projectId ?? "--"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <span>Assignee</span>
-                        <span className="text-right font-medium text-slate-900">
-                          {task.ownerId ?? "--"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <span>Due</span>
-                        <span className="text-right font-medium text-slate-900">
-                          {formatDate(task.dueDate)}
-                        </span>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      <HighlightChip
+                        label="Project"
+                        tone="blue"
+                        value={formatNamedReference(task.projectTitle, task.projectId)}
+                      />
+                      <HighlightChip
+                        label="Assignee"
+                        tone="emerald"
+                        value={formatValue(task.ownerId)}
+                      />
+                      <HighlightChip
+                        label="Priority"
+                        tone={
+                          task.priority?.toUpperCase() === "HIGH"
+                            ? "rose"
+                            : task.priority?.toUpperCase() === "MEDIUM"
+                              ? "amber"
+                              : "slate"
+                        }
+                        value={formatValue(task.priority)}
+                      />
+                      <HighlightChip
+                        label="WBS"
+                        tone="slate"
+                        value={formatValue(task.wbs ?? task.sequence)}
+                      />
+                      <HighlightChip
+                        label="Status"
+                        tone={task.isOverdue ? "rose" : task.isDueToday ? "amber" : "blue"}
+                        value={formatValue(task.status)}
+                      />
+                    </div>
+
+                    <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                      <ProgressHighlight
+                        label="Task completion"
+                        note={`Schedule ${formatDate(task.scheduleDate)} • End ${formatDate(task.endDate)}`}
+                        tone={task.isOverdue ? "rose" : task.isDueToday ? "amber" : "emerald"}
+                        value={task.taskPercentComplete}
+                      />
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <HighlightMetric
+                          label="Project completion"
+                          note="Linked project rollup"
+                          tone="slate"
+                          value={formatPercent(task.projectPercentComplete)}
+                        />
+                        <HighlightMetric
+                          label="Effort"
+                          note="Planned work from PROJECTSCHEDULE"
+                          tone="blue"
+                          value={formatNumber(task.effort)}
+                        />
                       </div>
                     </div>
 
-                    <p className="mt-5 line-clamp-4 text-sm leading-6 text-slate-600">
-                      {task.notesExcerpt ?? "No task note was returned by the source."}
-                    </p>
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <DetailCell
+                        label="Schedule date"
+                        tone="blue"
+                        value={formatDate(task.scheduleDate)}
+                      />
+                      <DetailCell
+                        label="End date"
+                        tone={task.isOverdue ? "rose" : task.isDueToday ? "amber" : "blue"}
+                        value={formatDate(task.endDate)}
+                      />
+                      <DetailCell
+                        label="Updated"
+                        tone="slate"
+                        value={formatTimestamp(task.updatedAt)}
+                      />
+                    </div>
+
+                    <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Work note
+                      </div>
+                      <p className="mt-3 break-words text-sm leading-6 text-slate-700">
+                        {task.notesExcerpt ?? "No task note was returned by the source."}
+                      </p>
+                    </div>
                   </article>
                 );
               })}

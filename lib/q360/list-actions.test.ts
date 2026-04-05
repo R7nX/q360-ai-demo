@@ -114,18 +114,18 @@ describe("Q360 list-action adapter", () => {
     expect(tasks.rows[0]?.PROJECTSCHEDULENO).toBe("TS-DB-1001");
   });
 
-  it("falls back to bundled fixtures when mock.db does not have compatible Team 1 tables", async () => {
+  it("requires actual SQLite project and task tables in mock mode", async () => {
     const missingDbPath = path.join(os.tmpdir(), "q360-team1-list-actions-missing.sqlite");
 
     vi.stubEnv("USE_MOCK_DATA", "true");
     vi.stubEnv("DATABASE_URL", `file:${missingDbPath}`);
 
-    const [projects, tasks] = await Promise.all([listProjectRows(), listTaskRows()]);
-
-    expect(projects.sourceName).toBe("fixtures:Project");
-    expect(tasks.sourceName).toBe("fixtures:Task");
-    expect(projects.rows.length).toBeGreaterThan(0);
-    expect(tasks.rows.length).toBeGreaterThan(0);
+    await expect(listProjectRows()).rejects.toThrow(
+      "Mock mode requires actual SQLite table(s) for Project reads.",
+    );
+    await expect(listTaskRows()).rejects.toThrow(
+      "Mock mode requires actual SQLite table(s) for Task reads.",
+    );
   });
 
   it("parses live-style project and task GET list responses", async () => {

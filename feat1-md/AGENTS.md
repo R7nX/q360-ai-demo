@@ -99,8 +99,6 @@ Current Team 1 work in the master repo primarily lives in:
   /q360
   /domain
   /rules
-/mock
-  /q360
 /types
   q360.ts
 /feat1-md
@@ -116,7 +114,6 @@ Current important Team 1 files:
 - `lib/domain/**`
 - `lib/rules/business-rules.ts`
 - `lib/sqlite.ts`
-- `mock/q360/**`
 - `types/q360.ts`
 
 ## Current schema direction
@@ -256,7 +253,7 @@ Optional richer mock sections:
 - `projectevents`
 - `timebill`
 
-Bundled Team 1 fixture rows remain fallback-only when `mock.db` does not have compatible tables.
+Team 1 no longer ships bundled row fixtures as a runtime fallback. Mock mode now requires actual compatible SQLite tables.
 
 ## Schema-visible or partially validated, but not yet fully live-safe
 

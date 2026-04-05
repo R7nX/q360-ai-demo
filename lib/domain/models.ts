@@ -62,6 +62,8 @@ export type Project = {
   salesRepId: string | null;
   status: string | null;
   dueDate: string | null;
+  endDate: string | null;
+  projectStartDate: string | null;
   startDate: string | null;
   percentComplete: number | null;
   hoursBudget: number | null;
@@ -78,9 +80,16 @@ export type Task = {
   title: string | null;
   status: string | null;
   dueDate: string | null;
+  endDate: string | null;
+  scheduleDate: string | null;
   projectId: string | null;
   projectTitle: string | null;
   ownerId: string | null;
+  effort: number | null;
+  priority: string | null;
+  taskPercentComplete: number | null;
+  projectPercentComplete: number | null;
+  wbs: string | null;
   sequence: string | null;
   notesExcerpt: string | null;
   updatedAt: string | null;

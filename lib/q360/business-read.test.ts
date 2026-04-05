@@ -34,6 +34,7 @@ function createFeature1MockDb(): string {
         CUSTOMER_COMPANY TEXT,
         STATUSCODE TEXT,
         ENDDATE TEXT,
+        PROJECTSTARTDATE TEXT,
         STARTDATE TEXT,
         PROJECTLEADER TEXT,
         MODDATE TEXT,
@@ -49,8 +50,14 @@ function createFeature1MockDb(): string {
         PROJECTTITLE TEXT,
         TITLE TEXT,
         STATUSCODE TEXT,
+        SCHEDDATE TEXT,
         ENDDATE TEXT,
         ASSIGNEE TEXT,
+        EFFORT TEXT,
+        PRIORITY TEXT,
+        TASKPERCENTCOMPLETE TEXT,
+        PROJECTPERCENTCOMPLETE TEXT,
+        WBS TEXT,
         SCHED TEXT,
         MODDATE TEXT,
         SEQ TEXT
@@ -76,10 +83,10 @@ function createFeature1MockDb(): string {
 
     const insertProject = db.prepare(`
       INSERT INTO projects (
-        PROJECTNO, TITLE, CUSTOMERNO, CUSTOMER_COMPANY, STATUSCODE, ENDDATE, STARTDATE,
+        PROJECTNO, TITLE, CUSTOMERNO, CUSTOMER_COMPANY, STATUSCODE, ENDDATE, PROJECTSTARTDATE, STARTDATE,
         PROJECTLEADER, MODDATE, PERCENTCOMPLETE, HOURSBUDGET, REVENUEBUDGET, SITENO, SALESREP
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     insertProject.run(
       "P-1001",
@@ -88,6 +95,7 @@ function createFeature1MockDb(): string {
       "North Peak University",
       "ACTIVE",
       "2026-03-28 00:00:00.000",
+      "2026-02-03 00:00:00.000",
       "2026-02-10 00:00:00.000",
       "JMILLER",
       "2026-03-20 14:15:00.000",
@@ -104,6 +112,7 @@ function createFeature1MockDb(): string {
       "Summit Health",
       "ACTIVE",
       "2026-03-18 00:00:00.000",
+      "2026-01-15 00:00:00.000",
       "2026-01-22 00:00:00.000",
       "RLEE",
       "2026-03-01 09:00:00.000",
@@ -120,6 +129,7 @@ function createFeature1MockDb(): string {
       "City of Fairfield",
       "PLANNING",
       "2026-04-11 00:00:00.000",
+      "2026-02-25 00:00:00.000",
       "2026-03-02 00:00:00.000",
       "KADAMS",
       "2026-03-22 16:40:00.000",
@@ -132,10 +142,11 @@ function createFeature1MockDb(): string {
 
     const insertTask = db.prepare(`
       INSERT INTO projectschedule (
-        PROJECTSCHEDULENO, PROJECTNO, PROJECTTITLE, TITLE, STATUSCODE, ENDDATE,
-        ASSIGNEE, SCHED, MODDATE, SEQ
+        PROJECTSCHEDULENO, PROJECTNO, PROJECTTITLE, TITLE, STATUSCODE, SCHEDDATE, ENDDATE,
+        ASSIGNEE, EFFORT, PRIORITY, TASKPERCENTCOMPLETE, PROJECTPERCENTCOMPLETE, WBS,
+        SCHED, MODDATE, SEQ
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     insertTask.run(
       "TS-1001",
@@ -143,8 +154,14 @@ function createFeature1MockDb(): string {
       "Campus AV Refresh",
       "Secure procurement approval",
       "INPROGRESS",
+      "2026-03-17 00:00:00.000",
       "2026-03-19 00:00:00.000",
       "JMILLER",
+      "6.5",
+      "HIGH",
+      "48",
+      "72",
+      "1.1.0",
       "Waiting on final client sign-off before procurement can start.",
       "2026-03-18 13:10:00.000",
       "10",
@@ -155,8 +172,14 @@ function createFeature1MockDb(): string {
       "Clinic Exam Room Expansion",
       "Update margin worksheet",
       "NOTSTARTED",
+      "2026-03-23 00:00:00.000",
       "2026-03-24 00:00:00.000",
       "RLEE",
+      "3.0",
+      "MEDIUM",
+      "0",
+      "58",
+      "2.4.0",
       "Finance needs revised margin worksheet.",
       "2026-03-23 15:45:00.000",
       "20",
@@ -167,8 +190,14 @@ function createFeature1MockDb(): string {
       "Council Chamber Modernization",
       "Confirm room counts",
       "WAITING",
+      "2026-03-24 00:00:00.000",
       "2026-03-25 00:00:00.000",
       "KADAMS",
+      "2.0",
+      "LOW",
+      "15",
+      "22",
+      "3.2.1",
       "Awaiting customer confirmation on room counts.",
       "2026-03-22 11:30:00.000",
       "30",
@@ -278,6 +307,35 @@ describe("business read adapter", () => {
     expect(result.summary.overdueCount).toBe(1);
     expect(result.summary.atRiskCount).toBe(2);
     expect(result.projects.every((project) => project.lastActivityAt !== null)).toBe(true);
+    expect(result.projects[0]).toEqual(
+      expect.objectContaining({
+        customerId: "C10026",
+        customerName: "Summit Health",
+        dueDate: "2026-03-18 00:00:00.000",
+        endDate: "2026-03-18 00:00:00.000",
+        hoursBudget: 96,
+        id: "P-1002",
+        openTaskCount: 1,
+        overdueTaskCount: 0,
+        ownerId: "RLEE",
+        percentComplete: 58,
+        projectStartDate: "2026-01-15 00:00:00.000",
+        revenueBudget: 64000,
+        salesRepId: "RLEE",
+        siteId: "S-1002",
+        startDate: "2026-01-22 00:00:00.000",
+        status: "ACTIVE",
+        taskCount: 1,
+        title: "Clinic Exam Room Expansion",
+      }),
+    );
+    expect(result.projects[1]).toEqual(
+      expect.objectContaining({
+        id: "P-1001",
+        nextTaskDueDate: "2026-03-19 00:00:00.000",
+        overdueTaskCount: 1,
+      }),
+    );
   });
 
   it("returns follow-up pressure from mock.db in mock mode", async () => {
@@ -296,6 +354,34 @@ describe("business read adapter", () => {
     expect(result.summary.dueTodayCount).toBe(1);
     expect(result.tasks[0]?.isOverdue).toBe(true);
     expect(result.tasks.every((task) => task.updatedAt !== null)).toBe(true);
+    expect(result.tasks[0]).toEqual(
+      expect.objectContaining({
+        dueDate: "2026-03-19 00:00:00.000",
+        effort: 6.5,
+        endDate: "2026-03-19 00:00:00.000",
+        id: "TS-1001",
+        isOverdue: true,
+        notesExcerpt: "Waiting on final client sign-off before procurement can start.",
+        ownerId: "JMILLER",
+        priority: "HIGH",
+        projectId: "P-1001",
+        projectPercentComplete: 72,
+        projectTitle: "Campus AV Refresh",
+        scheduleDate: "2026-03-17 00:00:00.000",
+        sequence: "10",
+        status: "INPROGRESS",
+        taskPercentComplete: 48,
+        title: "Secure procurement approval",
+        wbs: "1.1.0",
+      }),
+    );
+    expect(result.tasks[1]).toEqual(
+      expect.objectContaining({
+        id: "TS-1002",
+        isDueToday: true,
+        priority: "MEDIUM",
+      }),
+    );
   });
 
   it("returns a project activity stream from mock.db in mock mode", async () => {
@@ -355,6 +441,22 @@ describe("business read adapter", () => {
     expect(overview.summary.highPriorityActionCount).toBe(2);
     expect(overview.summary.recommendationCount).toBe(2);
     expect(overview.warnings).toHaveLength(0);
+    expect(overview.projectProgress.projects[0]).toEqual(
+      expect.objectContaining({
+        hoursBudget: 96,
+        projectStartDate: "2026-01-15 00:00:00.000",
+        revenueBudget: 64000,
+        salesRepId: "RLEE",
+      }),
+    );
+    expect(overview.followUps.tasks[0]).toEqual(
+      expect.objectContaining({
+        effort: 6.5,
+        priority: "HIGH",
+        taskPercentComplete: 48,
+        wbs: "1.1.0",
+      }),
+    );
   });
 
   it("keeps completed tasks out of the follow-up queue even when they were due today", async () => {

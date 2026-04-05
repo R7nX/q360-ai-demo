@@ -143,30 +143,39 @@ const projectFieldCandidates = {
   customerId: ["customerno"],
   customerName: ["customer_company", "company"],
   dueDate: ["enddate", "duedate", "installdate"],
+  endDate: ["enddate", "duedate", "installdate"],
   hoursBudget: ["hoursbudget", "budgethours"],
   id: ["projectno"],
   lastActivityAt: ["moddate", "lastactivityat", "lastactivitydate"],
   ownerId: ["projectleader", "ownerid", "userid"],
   percentComplete: ["percentcomplete", "pctcomplete"],
+  projectStartDate: ["projectstartdate"],
   revenueBudget: ["revenuebudget", "budgetrevenue", "contractamount"],
   salesRepId: ["salesrep", "salesperson", "salesrepid"],
   siteId: ["siteno", "siteid"],
-  startDate: ["startdate", "projectstartdate"],
+  startDate: ["startdate"],
   status: ["statuscode", "status"],
   title: ["title", "projecttitle"],
 } as const;
 
 const taskFieldCandidates = {
   dueDate: ["enddate", "duedate"],
+  effort: ["effort", "assignedeffort", "targeteffort", "totaleffort"],
+  endDate: ["enddate", "duedate"],
   id: ["projectscheduleno", "taskno", "id"],
   notes: ["sched", "comment", "description", "notes"],
   ownerId: ["assignee", "ownerid", "userid"],
+  priority: ["priority"],
+  projectPercentComplete: ["projectpercentcomplete"],
   projectId: ["projectno", "projects_projectno", "linkno"],
   projectTitle: ["projecttitle", "projects_title"],
+  scheduleDate: ["scheddate", "scheduledate"],
   sequence: ["seq", "sequence", "wbs"],
   status: ["statuscode", "status"],
+  taskPercentComplete: ["taskpercentcomplete"],
   title: ["title", "tasktitle"],
   updatedAt: ["moddate", "updatedat", "date"],
+  wbs: ["wbs"],
 } as const;
 
 const activityFieldCandidates = {
@@ -266,15 +275,6 @@ function collectAvailableFields(rows: Q360RecordRow[]): string[] {
   return Array.from(availableFields);
 }
 
-function readString(value: unknown): string | null {
-  if (value === undefined || value === null) {
-    return null;
-  }
-
-  const stringValue = String(value).trim();
-  return stringValue.length > 0 ? stringValue : null;
-}
-
 function isClosedStatus(status: string | null): boolean {
   return status ? CLOSED_STATUSES.has(status.toUpperCase()) : false;
 }
@@ -340,8 +340,6 @@ function normalizeTaskRows(rows: Q360RecordRow[], sourceName: string): FollowUpI
         ...task,
         isDueToday: isDueToday(task.dueDate, task.status),
         isOverdue: isOverdue(task.dueDate, task.status),
-        projectTitle: readString(row.projecttitle ?? row.PROJECTTITLE),
-        sequence: readString(row.seq ?? row.SEQ),
       } satisfies FollowUpItem;
     })
     .filter((task): task is FollowUpItem => task !== null);

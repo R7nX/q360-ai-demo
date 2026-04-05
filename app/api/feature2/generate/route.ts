@@ -6,9 +6,6 @@ import {
   getSiteByNo,
   getTimeBillsByDispatch,
   formatDispatchForPrompt,
-  FALLBACK_DISPATCHES,
-  FALLBACK_CUSTOMERS,
-  FALLBACK_SITES,
 } from "@/lib/q360Client";
 import {
   getDispatchByIdFromMockDb,
@@ -60,22 +57,11 @@ export async function POST(request: NextRequest) {
     let timeBills: TimeBill[] = [];
 
     if (USE_MOCK) {
-      // Try SQLite mock.db first
       dispatch = getDispatchByIdFromMockDb(recordId);
       if (dispatch) {
         customer = getCustomerFromMockDb(dispatch.customerno);
         site = getSiteFromMockDb(dispatch.siteno);
         timeBills = getTimeBillsFromMockDb(recordId) ?? [];
-      }
-
-      // Fall back to hardcoded demo data
-      if (!dispatch) {
-        dispatch =
-          FALLBACK_DISPATCHES.find((d) => d.dispatchno === recordId) ?? null;
-        if (dispatch) {
-          customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
-          site = FALLBACK_SITES[dispatch.siteno] ?? null;
-        }
       }
     } else {
       try {
@@ -91,18 +77,18 @@ export async function POST(request: NextRequest) {
           timeBills = tb;
         }
       } catch (apiError) {
-        console.error("Q360 API failed, trying fallback:", apiError);
-        dispatch =
-          FALLBACK_DISPATCHES.find((d) => d.dispatchno === recordId) ?? null;
-        if (dispatch) {
-          customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
-          site = FALLBACK_SITES[dispatch.siteno] ?? null;
-        }
+        console.error("Q360 API failed while generating Feature 2 output:", apiError);
+        const message =
+          apiError instanceof Error ? apiError.message : "Q360 API unavailable.";
+        return new Response(message, { status: 502 });
       }
     }
 
     if (!dispatch) {
-      return new Response(`Dispatch ${recordId} not found`, { status: 404 });
+      const notFoundMessage = USE_MOCK
+        ? `Dispatch ${recordId} was not found in mock.db. Seed the dispatch table with actual rows first.`
+        : `Dispatch ${recordId} not found`;
+      return new Response(notFoundMessage, { status: 404 });
     }
 
     const formattedData = formatDispatchForPrompt(

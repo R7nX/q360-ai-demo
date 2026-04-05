@@ -75,9 +75,6 @@ Ported into the master repo:
 - `lib/q360/record-list.ts`
 - `lib/q360/schema-discovery.ts`
 - `lib/rules/business-rules.ts`
-- `mock/q360/phase0.ts`
-- `mock/q360/phase1.ts`
-- `mock/q360/project-monitor.ts`
 
 ### Stage 3 — Team 1 API shape in master
 
@@ -181,7 +178,7 @@ Result:
 
 - Team 1 mock mode now reads compatible manager data from `mock.db`
 - `USE_MOCK_DATA` is now the primary Team 1 mock switch
-- bundled Team 1 fixture rows remain fallback-only when `mock.db` does not contain compatible tables
+- Team 1 mock mode now requires actual compatible SQLite tables and no longer falls back to bundled row fixtures
 - seed scripts and runtime readers now resolve the same SQLite path via `DATABASE_URL`
 
 ## Current implementation decisions
@@ -236,7 +233,7 @@ When mock mode is enabled, Team 1 now prefers:
 - optional `projectevents`
 - optional `timebill`
 
-from `mock.db` before falling back to bundled fixture rows.
+from `mock.db`.
 
 ## What is verified vs not yet verified
 
@@ -269,7 +266,7 @@ from `mock.db` before falling back to bundled fixture rows.
 2. The current `app/feature1/page.tsx` is still a transitional Team 1 page, not the final manager shell.
 3. Team 1 is not yet split into the broader route/page set for projects, service, sales, accounting, and reports.
 4. Shared helper overlap between `lib/q360Client.ts` and `lib/q360/**` is still unresolved.
-5. Team 1 still keeps bundled fixture files as a fallback path when `mock.db` lacks compatible tables.
+5. Shared helper overlap between `lib/q360Client.ts` and `lib/q360/**` is still unresolved outside the Team 1 path.
 
 ## Recommended next stage
 

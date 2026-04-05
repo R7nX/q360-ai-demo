@@ -97,11 +97,13 @@ export function normalizeProjectRecord(
     | "customerId"
     | "customerName"
     | "dueDate"
+    | "endDate"
     | "hoursBudget"
     | "id"
     | "lastActivityAt"
     | "ownerId"
     | "percentComplete"
+    | "projectStartDate"
     | "revenueBudget"
     | "salesRepId"
     | "siteId"
@@ -116,15 +118,19 @@ export function normalizeProjectRecord(
     return null;
   }
 
+  const dueDate = toStringOrNull(getRowValue(row, fieldMap.dueDate));
+
   return {
     customerId: toStringOrNull(getRowValue(row, fieldMap.customerId)),
     customerName: toStringOrNull(getRowValue(row, fieldMap.customerName)),
-    dueDate: toStringOrNull(getRowValue(row, fieldMap.dueDate)),
+    dueDate,
+    endDate: toStringOrNull(getRowValue(row, fieldMap.endDate ?? fieldMap.dueDate)) ?? dueDate,
     hoursBudget: toNumberOrNull(getRowValue(row, fieldMap.hoursBudget)),
     id,
     lastActivityAt: toStringOrNull(getRowValue(row, fieldMap.lastActivityAt)),
     ownerId: toStringOrNull(getRowValue(row, fieldMap.ownerId)),
     percentComplete: toNumberOrNull(getRowValue(row, fieldMap.percentComplete)),
+    projectStartDate: toStringOrNull(getRowValue(row, fieldMap.projectStartDate)),
     revenueBudget: toNumberOrNull(getRowValue(row, fieldMap.revenueBudget)),
     salesRepId: toStringOrNull(getRowValue(row, fieldMap.salesRepId)),
     siteId: toStringOrNull(getRowValue(row, fieldMap.siteId)),
@@ -138,16 +144,23 @@ export function normalizeProjectRecord(
 export function normalizeTaskRecord(
   row: Q360RecordRow,
   fieldMap: FieldMap<
+    | "effort"
     | "dueDate"
+    | "endDate"
     | "id"
     | "notes"
     | "ownerId"
+    | "priority"
+    | "projectPercentComplete"
     | "projectId"
     | "projectTitle"
+    | "scheduleDate"
     | "sequence"
     | "status"
+    | "taskPercentComplete"
     | "title"
     | "updatedAt"
+    | "wbs"
   >,
   sourceName: string,
 ): Task | null {
@@ -156,21 +169,33 @@ export function normalizeTaskRecord(
     return null;
   }
 
+  const dueDate = toStringOrNull(getRowValue(row, fieldMap.dueDate));
+  const wbs = toStringOrNull(getRowValue(row, fieldMap.wbs));
+
   return {
-    dueDate: toStringOrNull(getRowValue(row, fieldMap.dueDate)),
+    dueDate,
+    effort: toNumberOrNull(getRowValue(row, fieldMap.effort)),
+    endDate: toStringOrNull(getRowValue(row, fieldMap.endDate ?? fieldMap.dueDate)) ?? dueDate,
     id,
     notesExcerpt: truncateText(
       toStringOrNull(getRowValue(row, fieldMap.notes)),
       120,
     ),
     ownerId: toStringOrNull(getRowValue(row, fieldMap.ownerId)),
+    priority: toStringOrNull(getRowValue(row, fieldMap.priority)),
+    projectPercentComplete: toNumberOrNull(
+      getRowValue(row, fieldMap.projectPercentComplete),
+    ),
     projectId: toStringOrNull(getRowValue(row, fieldMap.projectId)),
     projectTitle: toStringOrNull(getRowValue(row, fieldMap.projectTitle)),
-    sequence: toStringOrNull(getRowValue(row, fieldMap.sequence)),
+    scheduleDate: toStringOrNull(getRowValue(row, fieldMap.scheduleDate)),
+    sequence: toStringOrNull(getRowValue(row, fieldMap.sequence)) ?? wbs,
     sourceName,
     status: toStringOrNull(getRowValue(row, fieldMap.status)),
+    taskPercentComplete: toNumberOrNull(getRowValue(row, fieldMap.taskPercentComplete)),
     title: toStringOrNull(getRowValue(row, fieldMap.title)),
     updatedAt: toStringOrNull(getRowValue(row, fieldMap.updatedAt)),
+    wbs,
   };
 }
 

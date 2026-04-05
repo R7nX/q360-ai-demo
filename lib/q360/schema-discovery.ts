@@ -12,10 +12,9 @@ import {
   isMockMode,
 } from "@/lib/q360/client";
 import {
-  mockDatasourceAccessList,
-  mockSchemas,
-  mockTableList,
-} from "@/mock/q360/phase0";
+  listSqliteTableNames,
+  readSqliteTableColumns,
+} from "@/lib/sqlite";
 import type {
   Q360DatasourceAccessItem,
   Q360FieldDefinition,
@@ -97,6 +96,75 @@ function normalizeSourceKind(sourceKind: string): Q360SourceKind {
 
 function normalizeSourceName(sourceName: string): string {
   return sourceName.trim().toUpperCase();
+}
+
+function inferSqliteSourceKind(): Q360SourceKind {
+  return "TABLE";
+}
+
+function inferSqliteFieldType(sqlType: string): string {
+  const normalizedSqlType = sqlType.trim().toUpperCase();
+
+  if (
+    ["INT", "INTEGER", "BIGINT", "SMALLINT", "TINYINT", "REAL", "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE", "MONEY"].some(
+      (candidateType) => normalizedSqlType.includes(candidateType),
+    )
+  ) {
+    return "N";
+  }
+
+  if (
+    ["DATE", "DATETIME", "TIME", "TIMESTAMP"].some((candidateType) =>
+      normalizedSqlType.includes(candidateType),
+    )
+  ) {
+    return "D";
+  }
+
+  if (
+    ["BOOL", "BOOLEAN", "BIT"].some((candidateType) =>
+      normalizedSqlType.includes(candidateType),
+    )
+  ) {
+    return "L";
+  }
+
+  return "C";
+}
+
+function getMockSqliteTableListOrThrow(): Q360TableListItem[] {
+  const tableNames = listSqliteTableNames();
+  if (tableNames.length === 0) {
+    throw new Error(
+      "Mock mode requires actual SQLite tables in DATABASE_URL-backed mock.db, but no tables were found.",
+    );
+  }
+
+  return tableNames.map((tableName) => ({
+    table_dbf: normalizeSourceName(tableName),
+    table_type: inferSqliteSourceKind(),
+  }));
+}
+
+function buildMockSqliteSchema(tableName: string): Q360TableSchema {
+  const normalizedTableName = normalizeSourceName(tableName);
+  const fields: Q360FieldDefinition[] = readSqliteTableColumns(tableName).map((field) => ({
+    tableName: normalizedTableName,
+    fieldName: normalizeSourceName(field.name),
+    fieldTitle: field.name,
+    fieldType: inferSqliteFieldType(field.type),
+    isPrimaryKey: field.primaryKeyOrdinal > 0,
+    mandatory: field.notNull,
+    relatedTo: null,
+    sqlType: field.type || "TEXT",
+    webTitle: field.name,
+  }));
+
+  return {
+    fields,
+    primaryKey: fields.find((field) => field.isPrimaryKey)?.fieldName ?? null,
+    tableName: normalizedTableName,
+  };
 }
 
 function getCachedValue<TValue>(cacheKey: CacheKey): TValue | null {
@@ -260,7 +328,17 @@ export async function getDatasourceAccessList(
 
   let accessList: Q360DatasourceAccessItem[];
   if (isMockMode()) {
-    accessList = mockDatasourceAccessList;
+    accessList = getMockSqliteTableListOrThrow().map((source, index) => ({
+      accessflag: "Y",
+      datasource: source.table_dbf,
+      gridviewname: "",
+      pkname: buildMockSqliteSchema(source.table_dbf).primaryKey ?? "ROWID",
+      seq: String(index + 1),
+      sourcetype: source.table_type,
+      sqlreportdatasourcepermno: String(index + 100),
+      tabledef_editcondition: null,
+      userid: userId || "MOCK_Q360_API",
+    }));
   } else {
     const response = await fetchQ360Json(
       `/api/UserID?_a=datasourceAccessList&userid=${encodeURIComponent(userId)}`,
@@ -294,7 +372,7 @@ export async function getTableList(): Promise<Q360TableListItem[]> {
 
   let tableList: Q360TableListItem[];
   if (isMockMode()) {
-    tableList = mockTableList;
+    tableList = getMockSqliteTableListOrThrow();
   } else {
     const response = await fetchQ360Json(
       "/api/DataDict?_a=tableList",
@@ -324,12 +402,7 @@ export async function getTableSchema(
 
   let tableSchema: Q360TableSchema;
   if (isMockMode()) {
-    const mockSchema = mockSchemas.get(normalizedTableName);
-    if (!mockSchema) {
-      throw new Error(`Mock schema not found for ${normalizedTableName}.`);
-    }
-
-    tableSchema = mockSchema;
+    tableSchema = buildMockSqliteSchema(normalizedTableName);
   } else {
     const response = await fetchQ360Json(
       `/api/DataDict?_a=list&tablename=${encodeURIComponent(normalizedTableName)}`,
