@@ -36,13 +36,13 @@ const FEATURES = [
     description:
       "AI-generated workflow recommendations with automated resource assignments and visual diagrams — turning complex service data into actionable process maps.",
     icon: GitBranch,
-    href: "/feature3",
+    href: "/home",
     gradient: "from-emerald-500 to-teal-600",
     ring: "ring-emerald-200",
     bg: "bg-emerald-50",
     iconColor: "text-emerald-600",
     team: "Team 3",
-    active: false,
+    active: true,
   },
 ];
 

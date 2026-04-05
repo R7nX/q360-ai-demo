@@ -4,7 +4,7 @@
 > **Scope:** Refactor Feature 2 email generation into shared abstract layer; build overdue alert
 > **Branch:** `feature/2-utility-suite`
 > **Owner:** Ryan (draft-email + overdue alert) / Partner (service-closure + new-call-ack)
-> **Status:** In progress — Sections 1-2 approved, Sections 3-4 not yet discussed
+> **Status:** Partially implemented as of 2026-04-05 — Sections 3-4 complete, Sections 1-2 partial
 
 ---
 
@@ -18,11 +18,22 @@ Extract the core logic from `/api/feature2/generate` into shared functions so th
 
 ---
 
-## Section 1: Shared Logic Extraction (APPROVED)
+## Implementation Snapshot (2026-04-05)
+
+- ✅ `components/ai/EmailDrafter.tsx` is implemented.
+- ✅ Overdue alert stack is implemented (`/api/feature2/overdue`, `/feature2/overdue`, `AlertCard`, `StatsSummaryBar`).
+- ✅ `/api/ai/draft-email` is implemented and streams output.
+- ⚠️ `lib/entityResolver.ts` was planned but is not implemented.
+- ⚠️ `/api/feature2/generate` is not yet a thin wrapper; core logic is still duplicated across routes.
+- ⚠️ Planned JSON mode for `/api/ai/draft-email` (`?format=json`) is not implemented.
+
+---
+
+## Section 1: Shared Logic Extraction (APPROVED DESIGN, NOT YET IMPLEMENTED)
 
 Pull data-fetching + formatting logic out of the generate route into a reusable module.
 
-### New file: `lib/entityResolver.ts`
+### Planned file: `lib/entityResolver.ts` (currently missing)
 
 Responsible for: given an `(entityType, entityId)`, fetch the entity + related data (mock or live), return formatted prompt text.
 
@@ -33,11 +44,8 @@ export async function resolveEntity(
 ): Promise<{ formatted: string; raw: Record<string, unknown> }>
 ```
 
-- Contains the mock-vs-live branching logic currently in `/api/feature2/generate/route.ts` lines 56–113
-- Contains the fallback logic (hardcoded demo data)
-- Only supports `dispatch` initially — interface is designed for future entity types
-- `formatted` = the labeled plain-text block for AI prompts (calls `formatDispatchForPrompt`)
-- `raw` = the original entity data (for metadata or component display)
+- Current state: both `/api/feature2/generate` and `/api/ai/draft-email` still fetch/resolve data independently.
+- Impact: this section's no-duplication objective is not met yet.
 
 ### Existing files — unchanged
 
@@ -50,7 +58,7 @@ export async function resolveEntity(
 
 ---
 
-## Section 2: Route Design (APPROVED)
+## Section 2: Route Design (PARTIALLY IMPLEMENTED)
 
 Two routes, same logic underneath. No duplication.
 
@@ -71,7 +79,7 @@ Browser (Feature 2 page)          Browser (Team 1/3 via EmailDrafter)
 
 ### NEW: `POST /api/ai/draft-email` (abstract route)
 
-Accepts the generic contract from FEATURE_TAB_MAPPING.md / FEATURE_2_BUILD_PLAN.md:
+Accepts the generic contract from `docs/plans/FEATURE_TAB_MAPPING.md` / `docs/plans/FEATURE_2_PLAN.md`:
 
 ```typescript
 // Request body
@@ -116,15 +124,15 @@ Accepts the generic contract from FEATURE_TAB_MAPPING.md / FEATURE_2_BUILD_PLAN.
 - Calls the same shared functions as `/api/ai/draft-email`
 - No business logic of its own
 
-### Open question (not yet decided)
+### Open question (resolved)
 
-Should the abstract route support all 4 intents from day one (so partner can use it for service-closure + new-call-ack), or just Ryan's 2 intents (`status_update` + `overdue_alert`) with partner adding theirs later?
+`/api/ai/draft-email` currently supports all 4 existing intents (`project-status`, `service-closure`, `overdue-alert`, `new-call-ack`).
 
 ---
 
 ## Section 3: EmailDrafter Component
 
-_Not yet discussed. Next design session should cover:_
+_Implemented (v1)._ Current behavior:
 
 - `components/ai/EmailDrafter.tsx` — self-contained widget with props
 - Props: `entityType`, `entityId`, `audience`, `defaultTone`
@@ -136,13 +144,13 @@ _Not yet discussed. Next design session should cover:_
 
 ## Section 4: Overdue Alert
 
-_Not yet discussed. Next design session should cover:_
+_Implemented (v1)._ Current behavior:
 
 - `POST /api/feature2/overdue/route.ts` — batch scan, compute overdue, call Gemini (non-streaming JSON)
 - `app/feature2/overdue/page.tsx` — scan button, stats bar, filter/sort, alert cards
 - `app/feature2/components/AlertCard.tsx` — color-coded card (CRITICAL/HIGH/MEDIUM)
 - `app/feature2/components/StatsSummaryBar.tsx` — summary bar
-- Urgency tier logic from FEATURE_2.md and FEATURE_2_BUILD_PLAN.md
+- Urgency tier logic from `docs/plans/FEATURE_2_PLAN.md`
 - Mock data needs: dispatches with dates 3, 7, 10, 14+ days ago
 
 ---
