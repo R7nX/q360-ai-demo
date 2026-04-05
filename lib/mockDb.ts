@@ -221,9 +221,9 @@ function normalizeDispatch(row: Record<string, unknown>): Dispatch {
     date: str(r.date) ?? str(r.opendate) ?? str(r.calldate),
     closedate: str(r.closedate),
     estfixtime: str(r.estfixtime),
-    callername: str(r.callername),
+    callername: str(r.caller),
     calleremail: str(r.calleremail),
-    callerphone: str(r.callerphone),
-    description: str(r.description),
+    callerphone: str(r.callercontactno),
+    description: str(r.detail),
   };
 }
