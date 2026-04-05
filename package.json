@@ -46,5 +46,9 @@
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.2"
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "^1.32.0",
+    "@next/swc-linux-x64-gnu": "^16.2.2"
   }
 }
