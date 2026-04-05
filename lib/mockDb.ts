@@ -1,42 +1,9 @@
 import Database from "better-sqlite3";
-import { Pool } from "pg";
 import path from "path";
 import fs from "fs";
 import type { Dispatch, Customer, Site, TimeBill } from "@/types/q360";
 
 const DB_PATH = path.join(process.cwd(), "mock.db");
-const DATABASE_URL = process.env.DATABASE_URL ?? "";
-// USE_MOCK_DATA=true → local SQLite (mock.db), false → shared PostgreSQL (DATABASE_URL)
-const USE_PG = process.env.USE_MOCK_DATA !== "true" && (DATABASE_URL.startsWith("postgresql://") || DATABASE_URL.startsWith("postgres://"));
-
-// ── PostgreSQL ──
-
-let _pool: Pool | null = null;
-
-function getPool(): Pool {
-  if (!_pool) {
-    _pool = new Pool({ connectionString: DATABASE_URL });
-  }
-  return _pool;
-}
-
-async function pgQuery<T extends Record<string, unknown>>(
-  text: string,
-  params?: unknown[]
-): Promise<T[]> {
-  const { rows } = await getPool().query(text, params);
-  return rows as T[];
-}
-
-async function pgTableExists(table: string): Promise<boolean> {
-  const rows = await pgQuery<{ exists: boolean }>(
-    `SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1) AS exists`,
-    [table]
-  );
-  return rows[0]?.exists ?? false;
-}
-
-// ── SQLite ──
 
 function getDb(): Database.Database | null {
   if (!fs.existsSync(DB_PATH)) return null;
@@ -50,77 +17,47 @@ function hasTable(db: Database.Database, table: string): boolean {
   return !!row;
 }
 
-// ── Exported functions ──
-
-export async function getAllCustomersFromMockDb(): Promise<Record<string, Customer>> {
-  if (USE_PG) {
-    if (!(await pgTableExists("customer"))) return {};
-    const rows = await pgQuery("SELECT * FROM customer");
-    const map: Record<string, Customer> = {};
-    for (const row of rows) {
-      const r = lowerKeys(row);
-      const no = str(r.customerno);
-      if (!no) continue;
-      map[no] = { customerno: no, company: str(r.company) ?? "Unknown", type: str(r.type), status: str(r.status) ?? str(r.statuscode) };
-    }
-    return map;
-  }
-
+export function hasMockDbTable(table: string): boolean {
   const db = getDb();
-  if (!db) return {};
+  if (!db) return false;
+
   try {
-    if (!hasTable(db, "customer")) return {};
-    const rows = db.prepare("SELECT * FROM customer").all() as Record<string, unknown>[];
-    const map: Record<string, Customer> = {};
-    for (const row of rows) {
-      const r = lowerKeys(row);
-      const no = str(r.customerno);
-      if (!no) continue;
-      map[no] = { customerno: no, company: str(r.company) ?? "Unknown", type: str(r.type), status: str(r.status) ?? str(r.statuscode) };
-    }
-    return map;
-  } finally { db.close(); }
+    return hasTable(db, table);
+  } finally {
+    db.close();
+  }
 }
 
-export async function getAllSitesFromMockDb(): Promise<Record<string, Site>> {
-  if (USE_PG) {
-    if (!(await pgTableExists("site"))) return {};
-    const rows = await pgQuery("SELECT * FROM site");
-    const map: Record<string, Site> = {};
-    for (const row of rows) {
-      const r = lowerKeys(row);
-      const no = str(r.siteno);
-      if (!no) continue;
-      map[no] = { siteno: no, sitename: str(r.sitename) ?? "Unknown Site", address: str(r.address), city: str(r.city), state: str(r.state), zip: str(r.zip), phone: str(r.phone) };
-    }
-    return map;
-  }
-
-  const db = getDb();
-  if (!db) return {};
-  try {
-    if (!hasTable(db, "site")) return {};
-    const rows = db.prepare("SELECT * FROM site").all() as Record<string, unknown>[];
-    const map: Record<string, Site> = {};
-    for (const row of rows) {
-      const r = lowerKeys(row);
-      const no = str(r.siteno);
-      if (!no) continue;
-      map[no] = { siteno: no, sitename: str(r.sitename) ?? "Unknown Site", address: str(r.address), city: str(r.city), state: str(r.state), zip: str(r.zip), phone: str(r.phone) };
-    }
-    return map;
-  } finally { db.close(); }
-}
-
-export async function getDispatchesFromMockDb(): Promise<Dispatch[] | null> {
-  if (USE_PG) {
-    if (!(await pgTableExists("dispatch"))) return null;
-    const rows = await pgQuery("SELECT * FROM dispatch ORDER BY date DESC LIMIT 50");
-    return rows.map(normalizeDispatch);
-  }
-
+export function getPreferredTechnicianFromMockDb(): string | null {
   const db = getDb();
   if (!db) return null;
+
+  try {
+    if (!hasTable(db, "dispatch")) return null;
+
+    const row = db
+      .prepare(
+        `
+          SELECT TECHASSIGNED
+          FROM dispatch
+          WHERE TECHASSIGNED IS NOT NULL AND TECHASSIGNED != ''
+          GROUP BY TECHASSIGNED
+          ORDER BY COUNT(*) DESC, TECHASSIGNED ASC
+          LIMIT 1
+        `
+      )
+      .get() as { TECHASSIGNED?: string } | undefined;
+
+    return row?.TECHASSIGNED ?? null;
+  } finally {
+    db.close();
+  }
+}
+
+export function getDispatchesFromMockDb(): Dispatch[] | null {
+  const db = getDb();
+  if (!db) return null;
+
   try {
     if (!hasTable(db, "dispatch")) return null;
     const rows = db
@@ -132,57 +69,43 @@ export async function getDispatchesFromMockDb(): Promise<Dispatch[] | null> {
   }
 }
 
-export async function getDispatchByIdFromMockDb(
+export function getDispatchByIdFromMockDb(
   dispatchno: string
-): Promise<Dispatch | null> {
-  if (USE_PG) {
-    if (!(await pgTableExists("dispatch"))) return null;
-    let rows = await pgQuery("SELECT * FROM dispatch WHERE dispatchno = $1", [dispatchno]);
-    if (rows.length === 0) {
-      rows = await pgQuery("SELECT * FROM dispatch WHERE dispatchno LIKE $1", [`%${dispatchno}%`]);
-    }
-    return rows.length > 0 ? normalizeDispatch(rows[0]) : null;
-  }
-
+): Dispatch | null {
   const db = getDb();
   if (!db) return null;
+
   try {
     if (!hasTable(db, "dispatch")) return null;
+
+    // Try exact match first, then partial match on primary key columns
     let row = db
       .prepare("SELECT * FROM dispatch WHERE dispatchno = ?")
       .get(dispatchno) as Record<string, unknown> | undefined;
+
     if (!row) {
+      // The seed script may generate keys differently — try LIKE match
       row = db
         .prepare("SELECT * FROM dispatch WHERE dispatchno LIKE ?")
         .get(`%${dispatchno}%`) as Record<string, unknown> | undefined;
     }
+
     return row ? normalizeDispatch(row) : null;
   } finally {
     db.close();
   }
 }
 
-export async function getCustomerFromMockDb(customerno: string): Promise<Customer | null> {
-  if (USE_PG) {
-    if (!(await pgTableExists("customer"))) return null;
-    const rows = await pgQuery("SELECT * FROM customer WHERE customerno = $1", [customerno]);
-    if (rows.length === 0) return null;
-    const r = lowerKeys(rows[0]);
-    return {
-      customerno: str(r.customerno) ?? customerno,
-      company: str(r.company) ?? "Unknown",
-      type: str(r.type),
-      status: str(r.status) ?? str(r.statuscode),
-    };
-  }
-
+export function getCustomerFromMockDb(customerno: string): Customer | null {
   const db = getDb();
   if (!db) return null;
+
   try {
     if (!hasTable(db, "customer")) return null;
     const row = db
       .prepare("SELECT * FROM customer WHERE customerno = ?")
       .get(customerno) as Record<string, unknown> | undefined;
+
     if (!row) return null;
     const r = lowerKeys(row);
     return {
@@ -196,70 +119,117 @@ export async function getCustomerFromMockDb(customerno: string): Promise<Custome
   }
 }
 
-export async function getSiteFromMockDb(siteno: string): Promise<Site | null> {
-  if (USE_PG) {
-    if (!(await pgTableExists("site"))) return null;
-    const rows = await pgQuery("SELECT * FROM site WHERE siteno = $1", [siteno]);
-    if (rows.length === 0) return null;
-    const r = lowerKeys(rows[0]);
-    return {
-      siteno: str(r.siteno) ?? siteno,
-      sitename: str(r.sitename) ?? "Unknown Site",
-      address: str(r.address),
-      city: str(r.city),
-      state: str(r.state),
-      zip: str(r.zip),
-      phone: str(r.phone),
-    };
-  }
-
+export function getSiteFromMockDb(siteno: string): Site | null {
   const db = getDb();
   if (!db) return null;
+
   try {
     if (!hasTable(db, "site")) return null;
     const row = db
       .prepare("SELECT * FROM site WHERE siteno = ?")
       .get(siteno) as Record<string, unknown> | undefined;
+
     if (!row) return null;
+    const r = lowerKeys(row);
     return {
-      siteno: str(row.siteno) ?? siteno,
-      sitename: str(row.sitename) ?? "Unknown Site",
-      address: str(row.address),
-      city: str(row.city),
-      state: str(row.state),
-      zip: str(row.zip),
-      phone: str(row.phone),
+      siteno: str(r.siteno) ?? siteno,
+      sitename: str(r.sitename) ?? "Unknown Site",
+      address: str(r.address) ?? str(r.firstline),
+      city: str(r.city),
+      state: str(r.state),
+      zip: str(r.zip),
+      phone: str(r.phone),
     };
   } finally {
     db.close();
   }
 }
 
-export async function getTimeBillsFromMockDb(dispatchno: string): Promise<TimeBill[] | null> {
-  if (USE_PG) {
-    if (!(await pgTableExists("timebill"))) return null;
-    const rows = await pgQuery("SELECT * FROM timebill WHERE dispatchno = $1", [dispatchno]);
-    return rows.map((r) => ({
-      tbstarttime: str(r.tbstarttime),
-      tbendtime: str(r.tbendtime),
-      traveltime: str(r.traveltime),
-      techassigned: str(r.techassigned),
-    }));
-  }
+export function getAllCustomersFromMockDb(): Record<string, Customer> {
+  const db = getDb();
+  if (!db) return {};
 
+  try {
+    if (!hasTable(db, "customer")) return {};
+    const rows = db.prepare("SELECT * FROM customer").all() as Record<string, unknown>[];
+    const map: Record<string, Customer> = {};
+    for (const row of rows) {
+      const r = lowerKeys(row);
+      const no = str(r.customerno);
+      if (!no) continue;
+      map[no] = { customerno: no, company: str(r.company) ?? "Unknown", type: str(r.type), status: str(r.status) ?? str(r.statuscode) };
+    }
+    return map;
+  } finally {
+    db.close();
+  }
+}
+
+export function getAllSitesFromMockDb(): Record<string, Site> {
+  const db = getDb();
+  if (!db) return {};
+
+  try {
+    if (!hasTable(db, "site")) return {};
+    const rows = db.prepare("SELECT * FROM site").all() as Record<string, unknown>[];
+    const map: Record<string, Site> = {};
+    for (const row of rows) {
+      const r = lowerKeys(row);
+      const no = str(r.siteno);
+      if (!no) continue;
+      map[no] = { siteno: no, sitename: str(r.sitename) ?? "Unknown Site", address: str(r.address) ?? str(r.firstline), city: str(r.city), state: str(r.state), zip: str(r.zip), phone: str(r.phone) };
+    }
+    return map;
+  } finally {
+    db.close();
+  }
+}
+
+export function getTimeBillsFromMockDb(dispatchno: string): TimeBill[] | null {
   const db = getDb();
   if (!db) return null;
+
   try {
     if (!hasTable(db, "timebill")) return null;
     const rows = db
       .prepare("SELECT * FROM timebill WHERE dispatchno = ?")
       .all(dispatchno) as Record<string, unknown>[];
-    return rows.map((r) => ({
-      tbstarttime: str(r.tbstarttime),
-      tbendtime: str(r.tbendtime),
-      traveltime: str(r.traveltime),
-      techassigned: str(r.techassigned),
-    }));
+    return rows.map((row) => {
+      const r = lowerKeys(row);
+      return {
+        tbstarttime: str(r.date),
+        tbendtime: str(r.timebilled),
+        traveltime: null,
+        techassigned: str(r.userid),
+      };
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export function getTasksFromMockDb(userid?: string): Record<string, unknown>[] | null {
+  const db = getDb();
+  if (!db) return null;
+
+  try {
+    const tableName = hasTable(db, "TASKS")
+      ? "TASKS"
+      : hasTable(db, "tasks")
+        ? "tasks"
+        : null;
+
+    if (!tableName) return null;
+
+    const rows = userid
+      ? db
+          .prepare(`SELECT * FROM ${tableName} WHERE USERID = ? ORDER BY ENDDATE ASC, PRIORITY ASC, TASKID ASC`)
+          .all(userid)
+      : db
+          .prepare(`SELECT * FROM ${tableName} ORDER BY ENDDATE ASC, PRIORITY ASC, TASKID ASC`)
+          .all();
+
+    return rows as Record<string, unknown>[];
   } finally {
     db.close();
   }
@@ -291,9 +261,9 @@ function normalizeDispatch(row: Record<string, unknown>): Dispatch {
     date: str(r.date) ?? str(r.opendate) ?? str(r.calldate),
     closedate: str(r.closedate),
     estfixtime: str(r.estfixtime),
-    callername: str(r.callername),
+    callername: str(r.caller),
     calleremail: str(r.calleremail),
-    callerphone: str(r.callerphone),
-    description: str(r.description),
+    callerphone: str(r.callercontactno),
+    description: str(r.detail),
   };
 }
