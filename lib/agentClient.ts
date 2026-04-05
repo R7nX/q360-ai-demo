@@ -5,6 +5,23 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 const MODEL = "gemini-2.5-flash";
 
 /**
+ * Generate a non-streaming AI response. Returns the full text string.
+ * Use this for JSON-output tasks where the response must be complete before parsing.
+ */
+export async function generateJSON(
+  systemPrompt: string,
+  userPrompt: string,
+  maxOutputTokens = 3000
+): Promise<string> {
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    config: { systemInstruction: systemPrompt, maxOutputTokens },
+  });
+  return response.text ?? "";
+}
+
+/**
  * Stream an AI response. Returns a ReadableStream suitable for
  * piping directly to the browser via a Next.js API route Response.
  */
