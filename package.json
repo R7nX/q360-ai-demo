@@ -26,8 +26,6 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@emnapi/core": "^1.9.2",
-    "@emnapi/runtime": "^1.9.2",
     "@faker-js/faker": "^10.4.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
@@ -48,9 +46,5 @@
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.2"
-  },
-  "optionalDependencies": {
-    "@next/swc-linux-x64-gnu": "^16.2.2",
-    "lightningcss-linux-x64-gnu": "^1.32.0"
   }
 }
