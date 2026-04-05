@@ -4,22 +4,22 @@ This document is the execution guide for Part 3 of the Q360 AI Demo: the Employe
 
 Use it as the working contract while building. Do not treat this as a loose outline. Each stage below defines what should exist, what should work, what can be mocked, what depends on Team 2, and how to decide that the stage is complete.
 
-After starting, changing, blocking, or finishing any stage, update `report.md` immediately.
+After starting, changing, blocking, or finishing any stage, update `docs/reports/report.md` immediately.
 
 ## Source of Truth
 
 When there is any conflict, use these documents in this order:
 
-1. `PROJECT_MASTER_PLAN.md`
-2. `FEATURE_TAB_MAPPING.md`
-3. `API_STRUCTURE.md`
+1. `docs/plans/PROJECT_MASTER_PLAN.md`
+2. `docs/plans/FEATURE_TAB_MAPPING.md`
+3. `docs/reference/API_STRUCTURE.md`
 4. `AGENT.md`
 
 How to interpret them:
 
-- `PROJECT_MASTER_PLAN.md` is the main contract for Team 3 routes, files, stage order, and deliverables.
-- `FEATURE_TAB_MAPPING.md` defines the employee-facing use cases, Q360 tabs to mirror, main data tables, and Team 2 integration points.
-- `API_STRUCTURE.md` defines the real Q360 auth and request rules.
+- `docs/plans/PROJECT_MASTER_PLAN.md` is the main contract for Team 3 routes, files, stage order, and deliverables.
+- `docs/plans/FEATURE_TAB_MAPPING.md` defines the employee-facing use cases, Q360 tabs to mirror, main data tables, and Team 2 integration points.
+- `docs/reference/API_STRUCTURE.md` defines the real Q360 auth and request rules.
 - `AGENT.md` is general project context only. It is useful for constraints like keeping secrets server-side, but some ownership and stack references are older than the master plan.
 
 ## Part 3 Goal
@@ -196,7 +196,7 @@ Default fallback rules:
 - if `TASK` access is unavailable, use mock tasks
 - if employee schedule tables are unavailable, use mock schedule data
 - if Team 2 AI routes are unavailable, render placeholder or non-AI content instead of failing
-- if a route has no real user context yet, use a clearly documented temporary current-user assumption in `report.md`
+- if a route has no real user context yet, use a clearly documented temporary current-user assumption in `docs/reports/report.md`
 
 ## Team 2 Dependency Rules
 
@@ -227,7 +227,7 @@ If Team 2 is unfinished:
 
 - keep the page usable
 - leave clean insertion points
-- document the missing dependency in `report.md`
+- document the missing dependency in `docs/reports/report.md`
 - do not postpone the rest of the stage unless the dependency is truly blocking the core page
 
 ## Target Part 3 File Contract
@@ -300,7 +300,7 @@ Required work:
 
 Required output:
 
-- a completed Stage 0 report entry in `report.md`
+- a completed Stage 0 report entry in `docs/reports/report.md`
 - a confirmed build order for Stages 1 through 8
 - an explicit note on whether the repo matches the target folder contract
 - an explicit note on how Part 3 will use existing shared `lib` utilities
@@ -308,7 +308,7 @@ Required output:
 
 Completion standard:
 
-- anyone reading `report.md` can understand the repo baseline without reopening all the docs
+- anyone reading `docs/reports/report.md` can understand the repo baseline without reopening all the docs
 - all major dependencies and missing folders are documented
 
 How to test Stage 0:
@@ -316,7 +316,7 @@ How to test Stage 0:
 - confirm the target Team 3 files are listed in this plan
 - confirm the actual repo structure has been audited
 - confirm Team 2 dependency areas are named explicitly
-- confirm `report.md` includes blockers, next step, and current data mode
+- confirm `docs/reports/report.md` includes blockers, next step, and current data mode
 
 When to mark complete:
 
@@ -756,9 +756,9 @@ Do not mark complete if:
 
 ## Reporting Rules
 
-Whenever a stage changes, update `report.md` immediately.
+Whenever a stage changes, update `docs/reports/report.md` immediately.
 
-Each stage entry in `report.md` must include:
+Each stage entry in `docs/reports/report.md` must include:
 
 - date
 - stage number and stage name
@@ -809,4 +809,4 @@ Use this order unless a documented dependency forces a temporary deviation:
 
 ## Final Reminder
 
-If a stage is not truly demoable yet, do not call it complete. Mark it `in progress` or `blocked`, explain why in `report.md`, and keep moving with the parts that are not blocked.
+If a stage is not truly demoable yet, do not call it complete. Mark it `in progress` or `blocked`, explain why in `docs/reports/report.md`, and keep moving with the parts that are not blocked.

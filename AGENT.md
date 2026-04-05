@@ -37,7 +37,7 @@ Q360 is an ERP/FSM platform used by field service companies. It manages:
 - **Time Bills** — labor time entries tied to dispatches
 - **Machines / Equipment** — assets being serviced
 
-The Q360 REST API allows CRUD operations on all of these entities. See `API_STRUCTURE.md` for full technical details.
+The Q360 REST API allows CRUD operations on all of these entities. See `docs/reference/API_STRUCTURE.md` for full technical details.
 
 ---
 
@@ -69,7 +69,7 @@ The demo app is divided into three primary features, each owned by a separate te
 - AI-powered Smart Drafting: auto-generate project status emails, client updates, service reports
 - Scalable Automation: identify and automate other high-frequency manual Q360 tasks
 - Target: embed AI into the actions users perform most often in Q360
-- See `FEATURE_2_PLAN.md` for the full breakdown, research items, and demo plan
+- See `docs/plans/FEATURE_2_PLAN.md` for the full breakdown, research items, and demo plan
 
 ### Feature 3 — Dynamic Workflow Architect (AI Suggestion Engine)
 - On app entry, AI generates structured workflow recommendations based on company data
@@ -89,7 +89,7 @@ The demo app is divided into three primary features, each owned by a separate te
 
 ## Recommended Tech Stack
 
-> Framework is not finalized yet — Next.js is the strong recommendation. See research notes in `FEATURE_2_PLAN.md`.
+> Framework is not finalized yet — Next.js is the strong recommendation. See research notes in `docs/plans/FEATURE_2_PLAN.md`.
 
 | Layer | Recommendation | Rationale |
 |-------|---------------|-----------|
@@ -142,10 +142,10 @@ Q360 REST API          Gemini API (Google)
 | `Q360 v25.01.001.postman_collection.json` | Optional Postman artifact if exported into this repo |
 | `Q360 API v25 - Getting-Started.pdf` | Optional reference artifact if checked into this repo |
 | `AGENT.md` | **This file** — full project context for AI assistants |
-| `API_STRUCTURE.md` | Human-readable Q360 API reference (endpoints, schemas, entities) |
-| `FEATURE_TAB_MAPPING.md` | Maps Q360 tabs → teams, defines Next.js routes & file ownership |
-| `PROJECT_MASTER_PLAN.md` | **Full project scaffolding** — file tree, gameplans, deliverables, n8n |
-| `FEATURE_2_PLAN.md` | Full plan for Feature 2: Automated Utility Suite |
+| `docs/reference/API_STRUCTURE.md` | Human-readable Q360 API reference (endpoints, schemas, entities) |
+| `docs/plans/FEATURE_TAB_MAPPING.md` | Maps Q360 tabs → teams, defines Next.js routes & file ownership |
+| `docs/plans/PROJECT_MASTER_PLAN.md` | **Full project scaffolding** — file tree, gameplans, deliverables, n8n |
+| `docs/plans/FEATURE_2_PLAN.md` | Full plan for Feature 2: Automated Utility Suite |
 | `ENV_SETUP.md` | Local environment setup guide (updated as project evolves) |
 
 ---
@@ -238,7 +238,7 @@ Basic Tailwind-styled primitives — use these for consistent styling:
 
 ### File Ownership Rules
 
-Each team works **only** in their designated directories. See `PROJECT_MASTER_PLAN.md` for full details.
+Each team works **only** in their designated directories. See `docs/plans/PROJECT_MASTER_PLAN.md` for full details.
 
 | Team | Owns These Paths |
 |------|-----------------|
@@ -262,4 +262,12 @@ Each team works **only** in their designated directories. See `PROJECT_MASTER_PL
 7. **Feature branches.** Each team works in isolation on their own branch. Don't assume other teams' code exists when building a feature.
 8. **AI model defaults.** Use `gemini-2.0-flash` by default. This is the free tier model — no billing needed.
 9. **Use the shared layer.** Import from `@/lib/q360`, `@/lib/ai`, `@/lib/types`, `@/lib/constants`. Never write raw `fetch()` calls to Q360 or Gemini directly — always use the shared clients.
-10. **Read `PROJECT_MASTER_PLAN.md`** before starting any feature work — it defines exact file paths, naming conventions, and step-by-step gameplans for each team.
+10. **Read `docs/plans/PROJECT_MASTER_PLAN.md`** before starting any feature work — it defines exact file paths, naming conventions, and step-by-step gameplans for each team.
+11. **Documentation goes in `docs/`.** Never create `.md` plan/spec/report files in the repo root. Use the correct subfolder:
+
+    | Type | Folder | Examples |
+    |------|--------|---------|
+    | Plans, specs, design docs | `docs/plans/` | Feature plans, architecture specs, implementation designs |
+    | API & platform reference | `docs/reference/` | Q360 API docs, schema references |
+    | Meeting notes, scratch docs | `docs/notes/` | Team notes, working docs |
+    | Reports & deliverables | `docs/reports/` | Status reports, demo summaries |

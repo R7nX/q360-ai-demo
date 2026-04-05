@@ -19,7 +19,7 @@ The app scaffold and local tooling are in place, including:
 - Next.js 16 + React 19 project structure
 - Local SQLite mock database (`mock.db`)
 - Seeder script that pulls Q360 table schema and generates synthetic rows
-- Core planning docs (`PROJECT_MASTER_PLAN.md`, `API_STRUCTURE.md`, `FEATURE_TAB_MAPPING.md`)
+- Core planning docs (`docs/plans/PROJECT_MASTER_PLAN.md`, `docs/reference/API_STRUCTURE.md`, `docs/plans/FEATURE_TAB_MAPPING.md`)
 
 ## Tech Stack
 
@@ -90,9 +90,9 @@ Defined in `.env.example`:
 
 ## Project Docs
 
-- `PROJECT_MASTER_PLAN.md` — full implementation plan and ownership model
-- `API_STRUCTURE.md` — Q360 endpoint, schema, and auth reference
-- `FEATURE_TAB_MAPPING.md` — Q360 tab-to-feature mapping
+- `docs/plans/PROJECT_MASTER_PLAN.md` — full implementation plan and ownership model
+- `docs/reference/API_STRUCTURE.md` — Q360 endpoint, schema, and auth reference
+- `docs/plans/FEATURE_TAB_MAPPING.md` — Q360 tab-to-feature mapping
 - `AGENT.md` — project context and assistant guardrails
 
 ## Notes

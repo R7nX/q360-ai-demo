@@ -207,10 +207,10 @@ q360-ai-demo/
 ├── Dockerfile                            # [SHARED] Next.js container
 ├── mock.db                               # [GITIGNORED] Local SQLite
 │
-├── PROJECT_MASTER_PLAN.md                # This file
+├── docs/plans/PROJECT_MASTER_PLAN.md                # This file
 ├── AGENT.md                              # AI assistant context
-├── API_STRUCTURE.md                      # Q360 API reference
-├── FEATURE_TAB_MAPPING.md                # Tab ownership map
+├── docs/reference/API_STRUCTURE.md                      # Q360 API reference
+├── docs/plans/FEATURE_TAB_MAPPING.md                # Tab ownership map
 │
 ├── scripts/
 │   └── seed-mock-db.ts                   # [SHARED] Mock data seeder

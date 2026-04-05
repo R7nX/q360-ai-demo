@@ -79,7 +79,7 @@ Browser (Feature 2 page)          Browser (Team 1/3 via EmailDrafter)
 
 ### NEW: `POST /api/ai/draft-email` (abstract route)
 
-Accepts the generic contract from `FEATURE_TAB_MAPPING.md` / `FEATURE_2_PLAN.md`:
+Accepts the generic contract from `docs/plans/FEATURE_TAB_MAPPING.md` / `docs/plans/FEATURE_2_PLAN.md`:
 
 ```typescript
 // Request body
@@ -150,7 +150,7 @@ _Implemented (v1)._ Current behavior:
 - `app/feature2/overdue/page.tsx` — scan button, stats bar, filter/sort, alert cards
 - `app/feature2/components/AlertCard.tsx` — color-coded card (CRITICAL/HIGH/MEDIUM)
 - `app/feature2/components/StatsSummaryBar.tsx` — summary bar
-- Urgency tier logic from `FEATURE_2_PLAN.md`
+- Urgency tier logic from `docs/plans/FEATURE_2_PLAN.md`
 - Mock data needs: dispatches with dates 3, 7, 10, 14+ days ago
 
 ---

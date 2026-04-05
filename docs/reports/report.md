@@ -1,6 +1,6 @@
 # Part 3 Build Report
 
-Use this file to log progress for each build stage defined in `part3.md`.
+Use this file to log progress for each build stage defined in `docs/notes/part3.md`.
 
 Add a new section whenever a stage starts, changes materially, becomes blocked, or completes.
 
@@ -29,18 +29,18 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
 - Status: complete
 - Work completed:
   - re-initiated Stage 0 after clarifying that the main application database path for the feature uses Prisma connected to a homelab-hosted database
-  - verified that `part3.md` now documents Prisma as the primary server-side application data path for Part 3 where homelab-backed data is the source of truth
-  - verified that `part3.md` now treats `lib/mockDb.ts` as fallback/demo/offline support rather than the default primary data source
+  - verified that `docs/notes/part3.md` now documents Prisma as the primary server-side application data path for Part 3 where homelab-backed data is the source of truth
+  - verified that `docs/notes/part3.md` now treats `lib/mockDb.ts` as fallback/demo/offline support rather than the default primary data source
   - confirmed the existing shared backend layer still includes `lib/q360Client.ts` for Q360 authorization and REST access and `lib/mockDb.ts` for SQLite fallback reads
   - confirmed the current tracked repo still does not yet show a Prisma folder or `schema.prisma`, so the Part 3 plan now reflects intended architecture even where the workspace has not fully caught up yet
   - confirmed Team 3 implementation is still missing and Stage 1 should begin from the updated data-layer assumptions
 - Files touched:
-  - `part3.md`
-  - `report.md`
+  - `docs/notes/part3.md`
+  - `docs/reports/report.md`
   - `lib/q360Client.ts`
   - `lib/mockDb.ts`
   - `README.md`
-  - `PROJECT_MASTER_PLAN.md`
+  - `docs/plans/PROJECT_MASTER_PLAN.md`
   - `FEATURE_2.md`
   - `package.json`
 - Data mode:
@@ -52,7 +52,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
 - Next step:
   - begin Stage 1 with the assumption that Part 3 should use shared server-side utilities and prefer Prisma-backed homelab data over SQLite fallback where applicable
 - Tested:
-  - verified `part3.md` contains Prisma, homelab, `lib/q360Client.ts`, and `lib/mockDb.ts` guidance
+  - verified `docs/notes/part3.md` contains Prisma, homelab, `lib/q360Client.ts`, and `lib/mockDb.ts` guidance
   - verified the current repo still contains `lib/`, `types/`, and Feature 2 implementation, but no visible Prisma directory yet
 
 ## Stage 1: Employee Shell and Navigation
@@ -80,7 +80,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `components/ai/employee/EmployeeSidebar.tsx`
   - `components/ai/employee/EmployeeHeader.tsx`
   - `app/page.tsx`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - internal api
 - Blockers / dependencies:
@@ -116,7 +116,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `components/ai/employee/TaskList.tsx`
   - `components/ai/employee/TimeEntry.tsx`
   - `lib/employeeHome.ts`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mixed
 - Blockers / dependencies:
@@ -148,7 +148,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `app/(employee)/my-dispatches/[dispatchNo]/page.tsx`
   - `components/ai/employee/DispatchCard.tsx`
   - `lib/employeeHome.ts`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mixed
 - Blockers / dependencies:
@@ -179,7 +179,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `app/(employee)/my-tasks/page.tsx`
   - `app/(employee)/time/page.tsx`
   - `lib/employeeHome.ts`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mock
 - Blockers / dependencies:
@@ -209,7 +209,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `app/(employee)/schedule/page.tsx`
   - `components/ai/employee/ScheduleView.tsx`
   - `lib/employeeHome.ts`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mock
 - Blockers / dependencies:
@@ -233,7 +233,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
 - Files touched:
   - `lib/mockDb.ts`
   - `lib/employeeHome.ts`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mixed
 - Blockers / dependencies:
@@ -255,7 +255,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
 - Files touched:
   - `scripts/seed-local.ts`
   - `package.json`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mock db
 - Blockers / dependencies:
@@ -284,7 +284,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `app/(employee)/workflows/page.tsx`
   - `components/ai/employee/WorkflowGuide.tsx`
   - `lib/employeeWorkflowGuide.ts`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mock
 - Blockers / dependencies:
@@ -303,7 +303,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
 - Date: 2026-04-04
 - Status: complete
 - Work completed:
-  - re-audited the current repo against the Stage 7 integration contract in `part3.md`, `PROJECT_MASTER_PLAN.md`, and `FEATURE_TAB_MAPPING.md`
+  - re-audited the current repo against the Stage 7 integration contract in `docs/notes/part3.md`, `docs/plans/PROJECT_MASTER_PLAN.md`, and `docs/plans/FEATURE_TAB_MAPPING.md`
   - identified the confirmed Team 2 integration surface that actually exists in this workspace: `app/api/feature2/generate`
   - added `components/ai/employee/EmployeeEmailAssistant.tsx` as a Team 3 wrapper around the existing Team 2 email-generation flow
   - integrated that wrapper into `app/(employee)/my-dispatches/[dispatchNo]/page.tsx` so the employee dispatch detail view can generate real Team 2 email drafts for the current dispatch
@@ -316,7 +316,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `app/(employee)/my-dispatches/[dispatchNo]/page.tsx`
   - `components/ai/employee/DailyBriefing.tsx`
   - `app/(employee)/workflows/page.tsx`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - internal api
 - Blockers / dependencies:
@@ -348,7 +348,7 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - `components/ai/employee/TimeEntry.tsx`
   - `components/ai/employee/ScheduleView.tsx`
   - `components/ai/employee/WorkflowGuide.tsx`
-  - `report.md`
+  - `docs/reports/report.md`
 - Data mode:
   - mixed
 - Blockers / dependencies:
