@@ -384,3 +384,29 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
 - Tested:
   - verified `rg -n "seed-mock-db.ts" docs/plans/PROJECT_MASTER_PLAN.md` no longer returns results
   - verified the seed refinement cluster totals now match the live dataset definitions in `scripts/seed-data.ts`
+
+## Session Handoff: Seed Profile Implementation
+
+- Date: 2026-04-05
+- Status: in progress
+- Work completed:
+  - implemented profile-backed dynamic seeding support for high-value tables in `scripts/seed.ts` + `scripts/seed-profiles.ts`
+  - added profile discovery mode (`npx tsx scripts/seed.ts profiles`) and npm alias (`npm run seed:profiles`)
+  - updated `docs/SEED_SCRIPT_REFINEMENT.md` to document profile mode and profile-backed/fallback dynamic behavior
+  - added teammate-facing execution plan in `docs/plans/HIGH_VALUE_TABLE_SEED_PLAN.md`
+- Files touched:
+  - `scripts/seed.ts`
+  - `scripts/seed-profiles.ts`
+  - `package.json`
+  - `docs/SEED_SCRIPT_REFINEMENT.md`
+  - `docs/plans/HIGH_VALUE_TABLE_SEED_PLAN.md`
+- Data mode:
+  - mock + dynamic synthetic
+- Blockers / dependencies:
+  - branch coordination dependency: this seed work should be merged/rebased with `feature3` first because fixes needed from that branch are not yet available on `main` (PR pending approval)
+  - do not assume `main` has the required feature3 fixes at restart time
+- Next step:
+  - resume from `chore/seed-data-refinement` and merge/rebase against `feature3` before opening/refreshing PR to `main`
+  - run smoke checks: `npm run seed:profiles` and a dynamic profile target (for example `npx tsx scripts/seed.ts MACHINE 20`)
+- Tested:
+  - verified `npm run seed:profiles` lists all profile-backed tables in ALL CAPS

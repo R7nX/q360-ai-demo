@@ -7,6 +7,7 @@
  * Modes:
  *   npx tsx scripts/seed.ts                      Seed all tables with hardcoded story data
  *   npx tsx scripts/seed.ts list                 List available Q360 tables (requires API creds)
+ *   npx tsx scripts/seed.ts profiles             List meaningful profile-backed tables
  *   npx tsx scripts/seed.ts <tablename> [count]  Schema-scrape a Q360 table and seed synthetic data
  *
  * Database target (controlled by USE_MOCK_DATA in .env.local):
@@ -16,6 +17,14 @@
 
 import { faker } from "@faker-js/faker";
 import { CUSTOMERS, SITES, DISPATCHES, TIMEBILLS, TASKS, daysAgo } from "./seed-data";
+import {
+  PROFILE_TABLES,
+  SeedContext,
+  SeedRow,
+  buildProfileRows,
+  createSeedContext,
+  normalizeTableName,
+} from "./seed-profiles";
 
 // Load .env.local
 try {
@@ -139,6 +148,14 @@ async function listTables() {
   console.log();
 }
 
+function listProfiles() {
+  console.log("\n  Supported meaningful profile tables:\n");
+  for (const table of PROFILE_TABLES) {
+    console.log(`    ${table}`);
+  }
+  console.log();
+}
+
 // ── Synthetic Data Generation (for dynamic table seeding) ────────────────────
 
 function toSQLiteType(datatype: string): "TEXT" | "INTEGER" | "REAL" {
@@ -152,9 +169,39 @@ const STATUS_CODES  = ["OPEN", "CLOSED", "PENDING", "IN PROGRESS", "ON HOLD", "C
 const PROBLEM_TYPES = ["HARDWARE", "SOFTWARE", "NETWORK", "ELECTRICAL", "MECHANICAL", "OTHER"];
 const PRIORITIES    = [1, 2, 3, 4, 5];
 
-function generateValue(col: Q360Column, tableName: string): string | number | null {
+function generateValue(
+  col: Q360Column,
+  tableName: string,
+  ctx?: SeedContext,
+  rowHint?: SeedRow
+): string | number | null {
   const name       = col.name.toLowerCase();
   const sqliteType = toSQLiteType(col.type);
+
+  if (ctx) {
+    // Prefer relationship-aware values when we know story pools.
+    if (name === "customerno") {
+      if (rowHint?.SITENO) {
+        const customerNo = ctx.sites.find((s) => String(s.SITENO) === String(rowHint.SITENO))?.CUSTOMERNO;
+        if (customerNo != null) return String(customerNo);
+      }
+      return String(faker.helpers.arrayElement(ctx.customers).CUSTOMERNO);
+    }
+    if (name === "siteno") {
+      if (rowHint?.CUSTOMERNO) {
+        const sites = ctx.sitesByCustomer.get(String(rowHint.CUSTOMERNO)) ?? [];
+        if (sites.length > 0) return String(faker.helpers.arrayElement(sites).SITENO);
+      }
+      return String(faker.helpers.arrayElement(ctx.sites).SITENO);
+    }
+    if (name === "dispatchno") return String(faker.helpers.arrayElement(ctx.dispatches).DISPATCHNO);
+    if (name === "userid" || name === "employee" || name === "techassigned" || name === "assignedto") {
+      return faker.helpers.arrayElement(ctx.users);
+    }
+    if (name === "projectno") return String(faker.helpers.arrayElement(ctx.projects).PROJECTNO);
+    if (name === "taskid") return `TASK-${faker.string.numeric(5)}`;
+    if (name === "machineno") return `MACH-${faker.string.numeric(5)}`;
+  }
 
   if (col.nullable && (name.includes("solution") || name.includes("note") || name.includes("close"))) {
     if (Math.random() < 0.3) return null;
@@ -199,7 +246,9 @@ function generateValue(col: Q360Column, tableName: string): string | number | nu
 
   // Company / customer
   if (name === "company" || name.includes("companyname")) return faker.company.name();
-  if (name === "title" && tableName === "projects") return `${faker.company.buzzAdjective()} ${faker.company.buzzNoun()} Project`;
+  if (name === "title" && normalizeTableName(tableName) === "PROJECTS") {
+    return `${faker.company.buzzAdjective()} ${faker.company.buzzNoun()} Project`;
+  }
   if (name === "title") return faker.company.catchPhrase();
 
   // Location
@@ -325,11 +374,20 @@ async function seedStoryData(db: DbAdapter) {
 
 // ── Seed: Dynamic Table (schema-scraped from Q360) ───────────────────────────
 
-async function seedDynamicTable(db: DbAdapter, tableName: string, count: number) {
+async function seedDynamicTable(db: DbAdapter, rawTableName: string, requestedCount: number) {
+  const tableName = normalizeTableName(rawTableName);
+  const count = Number.isFinite(requestedCount) && requestedCount > 0 ? requestedCount : 20;
+  // Story-derived pools that profile and fallback generators can both use.
+  const ctx = createSeedContext(new Date());
+
+  if (rawTableName !== tableName) {
+    console.log(`\n  Normalized table name: ${rawTableName} -> ${tableName}`);
+  }
+
   console.log(`\n  Fetching schema for "${tableName}" from Q360...`);
 
   const columns = await fetchColumns(tableName);
-  console.log(`  Found ${columns.length} columns: ${columns.map(c => c.name).join(", ")}\n`);
+  console.log(`  Found ${columns.length} columns: ${columns.map((c) => c.name).join(", ")}\n`);
 
   // Build CREATE TABLE
   const colDefs = columns.map(c => `"${c.name}" ${toSQLiteType(c.type)}`).join(",\n    ");
@@ -342,8 +400,21 @@ async function seedDynamicTable(db: DbAdapter, tableName: string, count: number)
   const placeholders = columns.map(() => "?").join(", ");
   const sql = `INSERT INTO "${tableName}" (${colNames}) VALUES (${placeholders})`;
 
+  const profileRows = buildProfileRows(tableName, ctx, count);
+  if (profileRows.length > 0) {
+    console.log(`  Using meaningful profile generator for "${tableName}"`);
+  } else {
+    console.log(`  No profile for "${tableName}", using schema-based synthetic fallback`);
+  }
+
   for (let i = 0; i < count; i++) {
-    const values = columns.map(c => generateValue(c, tableName));
+    const profileRow = profileRows[i];
+    const values = columns.map((c) => {
+      const key = c.name.toUpperCase();
+      if (profileRow && Object.prototype.hasOwnProperty.call(profileRow, key)) return profileRow[key];
+      // Fill remaining columns with schema-aware fallback values.
+      return generateValue(c, tableName, ctx, profileRow);
+    });
     await db.run(sql, values);
   }
 
@@ -360,6 +431,12 @@ async function main() {
   if (arg1 === "list") {
     console.log("\n  Fetching table list from Q360...");
     await listTables();
+    return;
+  }
+
+  if (arg1 === "profiles") {
+    // Discovery mode for teammates: what tables have meaningful profile generators.
+    listProfiles();
     return;
   }
 

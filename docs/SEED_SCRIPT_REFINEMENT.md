@@ -70,7 +70,7 @@ A data-only file containing all hardcoded story content:
 #### `scripts/seed.ts` (NEW unified script, ~450 lines)
 **Replaces both `seed-local.ts` and `seed-mock-db.ts`**
 
-**Three modes of operation:**
+**Four modes of operation:**
 
 1. **Default (Story Data):** `npx tsx scripts/seed.ts`
    - Seeds all 5 tables with hardcoded story data
@@ -82,9 +82,14 @@ A data-only file containing all hardcoded story content:
 
 3. **Dynamic Table:** `npx tsx scripts/seed.ts <tablename> [count]`
    - Fetches schema from Q360 Data Dictionary API
-   - Generates synthetic data based on column name patterns
+   - Uses profile-backed meaningful generation for supported high-value tables
+   - Falls back to schema-based synthetic data for unsupported tables
    - Inserts `count` rows (default 20)
    - Example: `npx tsx scripts/seed.ts dispatch 25`
+
+4. **List Profile Tables:** `npx tsx scripts/seed.ts profiles`
+   - Displays which table names are backed by meaningful profile generators
+   - npm alias: `npm run seed:profiles`
 
 **Database abstraction:**
 - Detects `USE_MOCK_DATA` environment variable:
@@ -96,13 +101,15 @@ A data-only file containing all hardcoded story content:
 **Key features:**
 - Imports story data from `seed-data.ts`
 - Reuses Q360 schema-scraping and synthetic generation logic from old `seed-mock-db.ts`
+- Adds profile-based generation for high-value tables via `seed-profiles.ts`
 - Single source of truth for seeding logic
 
 #### `package.json`
 Updated npm scripts:
 ```json
 "seed": "tsx scripts/seed.ts",
-"tables": "tsx scripts/seed.ts list"
+"tables": "tsx scripts/seed.ts list",
+"seed:profiles": "tsx scripts/seed.ts profiles"
 ```
 (Previously pointed to `seed-mock-db.ts`)
 
@@ -286,20 +293,23 @@ All other dispatch columns (statuscode, problem, solution, priority, techassigne
 | File | Purpose | Lines |
 |------|---------|-------|
 | `scripts/seed.ts` | Unified seed script (story data + dynamic tables) | ~450 |
+| `scripts/seed-profiles.ts` | High-value table profile generators and seed context | ~300 |
 | `scripts/seed-data.ts` | Hardcoded story content | ~400 |
 | `lib/mockDb.ts` | Mock DB reader (fixed normalizer) | 1 function changed |
 | `lib/q360Client.ts` | Q360 API wrapper (updated fallback data) | 3 constants updated |
-| `package.json` | npm scripts | 2 scripts updated |
+| `package.json` | npm scripts | 3 scripts updated |
 
 ---
 
 ## Notes for Continuation
 
 - **seed.ts is self-contained:** It imports seed-data.ts and handles all DB logic internally. No external dependencies beyond `better-sqlite3`, `pg`, and `@faker-js/faker`.
+- **Profile extension split:** High-value table profile generators now live in `scripts/seed-profiles.ts`, while `seed.ts` orchestrates mode selection, schema fetch, and fallback behavior.
+- **Branch coordination for restart:** Before opening/refreshing PR to `main`, merge/rebase this branch with `feature3` because that branch contains required fixes not yet merged to `main` (PR pending at handoff time).
 
 - **Future PR work:** The current branch has the complete implementation. When merging to main, verify:
   1. No linting errors (pre-existing typecheck errors in `.next` cache are unrelated)
   2. Both SQLite and PostgreSQL modes work in CI
-  3. npm scripts (`npm run seed`, `npm run tables`) are aliased correctly
+  3. npm scripts (`npm run seed`, `npm run tables`, `npm run seed:profiles`) are aliased correctly
 
 - **Demo readiness:** The seeded data is production-ready for the end-of-April 2026 demo. All 50 dispatches tell coherent stories; AI email generation will produce convincing outputs; overdue dashboard will show realistic tiering.

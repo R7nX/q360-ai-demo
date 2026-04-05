@@ -240,3 +240,15 @@ Guardrails:
 1. Implement profile framework in `scripts/seed.ts`.
 2. Deliver first profile set: `MACHINE`, `EMPSCHEDULE`, `GLOBALSCHEDULE`.
 3. Add validation summary output and run one full smoke seed.
+
+## 14. Session Restart Notes
+
+1. Current working branch for this effort: `chore/seed-data-refinement`.
+2. Branch coordination rule: merge/rebase with `feature3` before targeting `main`.
+3. Reason: required fixes exist in `feature3`, and its PR to `main` was still pending approval at handoff time.
+4. Practical restart flow:
+   - sync local `feature3`
+   - merge/rebase `feature3` into `chore/seed-data-refinement`
+   - resolve conflicts
+   - rerun smoke checks (`npm run seed:profiles` and one profile-backed dynamic seed command)
+5. Do not assume `main` contains the latest `feature3` fixes until that PR is merged.
