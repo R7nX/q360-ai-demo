@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-const MODEL = "gemini-2.5-flash";
+export const MODEL = "gemini-2.5-flash";
 
 /**
  * Generate a non-streaming AI response. Returns the full text string.
