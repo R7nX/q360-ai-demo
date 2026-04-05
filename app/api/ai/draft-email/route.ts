@@ -12,9 +12,6 @@
 import { NextRequest } from "next/server";
 import { generateStream } from "@/lib/agentClient";
 import {
-  getDispatchById,
-  getCustomerByNo,
-  getSiteByNo,
   formatDispatchForPrompt,
   FALLBACK_DISPATCHES,
   FALLBACK_CUSTOMERS,
@@ -36,8 +33,6 @@ import {
   newCallAckUserPrompt,
 } from "@/lib/emailPrompts";
 import type { ToneOption } from "@/types/feature2";
-
-const USE_MOCK = process.env.USE_MOCK_DATA === "true";
 
 const SUPPORTED_INTENTS = [
   "project-status",
@@ -96,36 +91,16 @@ export async function POST(request: NextRequest) {
     let customer = null;
     let site = null;
 
-    if (USE_MOCK) {
-      dispatch = getDispatchByIdFromMockDb(entityId);
+    dispatch = await getDispatchByIdFromMockDb(entityId);
+    if (dispatch) {
+      customer = await getCustomerFromMockDb(dispatch.customerno);
+      site = await getSiteFromMockDb(dispatch.siteno);
+    }
+    if (!dispatch) {
+      dispatch = FALLBACK_DISPATCHES.find((d) => d.dispatchno === entityId) ?? null;
       if (dispatch) {
-        customer = getCustomerFromMockDb(dispatch.customerno);
-        site = getSiteFromMockDb(dispatch.siteno);
-      }
-      if (!dispatch) {
-        dispatch = FALLBACK_DISPATCHES.find((d) => d.dispatchno === entityId) ?? null;
-        if (dispatch) {
-          customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
-          site = FALLBACK_SITES[dispatch.siteno] ?? null;
-        }
-      }
-    } else {
-      try {
-        dispatch = await getDispatchById(entityId);
-        if (dispatch) {
-          const [c, s] = await Promise.all([
-            getCustomerByNo(dispatch.customerno),
-            getSiteByNo(dispatch.siteno),
-          ]);
-          customer = c;
-          site = s;
-        }
-      } catch {
-        dispatch = FALLBACK_DISPATCHES.find((d) => d.dispatchno === entityId) ?? null;
-        if (dispatch) {
-          customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
-          site = FALLBACK_SITES[dispatch.siteno] ?? null;
-        }
+        customer = FALLBACK_CUSTOMERS[dispatch.customerno] ?? null;
+        site = FALLBACK_SITES[dispatch.siteno] ?? null;
       }
     }
 
