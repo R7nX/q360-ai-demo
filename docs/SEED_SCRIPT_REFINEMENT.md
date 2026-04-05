@@ -305,10 +305,10 @@ All other dispatch columns (statuscode, problem, solution, priority, techassigne
 
 - **seed.ts is self-contained:** It imports seed-data.ts and handles all DB logic internally. No external dependencies beyond `better-sqlite3`, `pg`, and `@faker-js/faker`.
 - **Profile extension split:** High-value table profile generators now live in `scripts/seed-profiles.ts`, while `seed.ts` orchestrates mode selection, schema fetch, and fallback behavior.
-- **Branch coordination for restart:** Before opening/refreshing PR to `main`, merge/rebase this branch with `feature3` because that branch contains required fixes not yet merged to `main` (PR pending at handoff time).
+- **Merge update (2026-04-05):** `feature3` has now been merged into `chore/seed-data-refinement`, so this branch already includes the task-table naming fix and CI/lint cleanup that were missing from old `main`.
 
 - **Future PR work:** The current branch has the complete implementation. When merging to main, verify:
-  1. No linting errors (pre-existing typecheck errors in `.next` cache are unrelated)
+  1. No linting errors on the merged branch
   2. Both SQLite and PostgreSQL modes work in CI
   3. npm scripts (`npm run seed`, `npm run tables`, `npm run seed:profiles`) are aliased correctly
 

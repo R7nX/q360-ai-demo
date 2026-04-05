@@ -429,10 +429,34 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
 - Data mode:
   - mock + dynamic synthetic
 - Blockers / dependencies:
-  - branch coordination dependency: this seed work should be merged/rebased with `feature3` first because fixes needed from that branch are not yet available on `main` (PR pending approval)
-  - do not assume `main` has the required feature3 fixes at restart time
+  - `feature3` has now been merged into this branch, so the seed work should continue from the merged baseline rather than the older pre-merge `main`
+  - if the branch is restarted later, verify the latest shared fixes are still present before comparing against `main`
 - Next step:
-  - resume from `chore/seed-data-refinement` and merge/rebase against `feature3` before opening/refreshing PR to `main`
+  - resume from `chore/seed-data-refinement` and continue profile validation and seed smoke checks on the merged branch
   - run smoke checks: `npm run seed:profiles` and a dynamic profile target (for example `npx tsx scripts/seed.ts MACHINE 20`)
 - Tested:
   - verified `npm run seed:profiles` lists all profile-backed tables in ALL CAPS
+
+## Merge Coordination: feature3 Baseline
+
+- Date: 2026-04-05
+- Status: complete
+- Work completed:
+  - merged `feature3` into `chore/seed-data-refinement` so this branch now includes the task-table naming fix (`task` support alongside `TASKS`), CI/lint cleanup, and the shared AI integration baseline that had not yet landed on `main`
+  - resolved the merge conflict in `docs/reports/report.md` and removed the obsolete `scripts/seed-local.ts` conflict path in favor of the unified seed flow
+  - verified the merged branch still passes `npm run lint`
+- Files touched:
+  - `docs/reports/report.md`
+  - `lib/mockDb.ts`
+  - `app/api/q360/tasks/route.ts`
+  - `app/api/ai/*`
+  - `components/ai/*`
+  - `__tests__/*`
+- Data mode:
+  - mixed
+- Blockers / dependencies:
+  - none
+- Next step:
+  - continue seed refinement on top of the merged `feature3` baseline
+- Tested:
+  - `npm run lint`

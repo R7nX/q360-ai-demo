@@ -26,11 +26,14 @@ import {
   normalizeTableName,
 } from "./seed-profiles";
 
-// Load .env.local
-try {
-  process.loadEnvFile(".env.local");
-} catch {
-  // .env.local not found — use system env
+// Load .env.local unless a caller explicitly opts out for isolated testing.
+if (process.env.SEED_SKIP_ENV_FILE?.toLowerCase() !== "true") {
+  const envFile = process.env.SEED_ENV_FILE ?? ".env.local";
+  try {
+    process.loadEnvFile(envFile);
+  } catch {
+    // Env file not found or not loadable — use system env.
+  }
 }
 
 // ── Database Abstraction ─────────────────────────────────────────────────────
@@ -70,7 +73,7 @@ function getDbAdapter(): Promise<DbAdapter> {
   const useMock = process.env.USE_MOCK_DATA?.toLowerCase() === "true";
 
   if (useMock) {
-    const dbPath = "mock.db";
+    const dbPath = process.env.MOCK_DB_PATH ?? "mock.db";
     console.log(`  Target: SQLite (${dbPath})`);
     return createSqliteAdapter(dbPath);
   }

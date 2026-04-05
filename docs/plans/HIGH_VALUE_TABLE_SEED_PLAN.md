@@ -1,12 +1,18 @@
 # High-Value Table Seed Plan
 
 **Date:** 2026-04-05  
-**Status:** Proposed  
+**Status:** Partially implemented as of 2026-04-05
 **Scope:** Extend `scripts/seed.ts` to generate meaningful data for high-value Q360 tables using a hybrid deterministic + profile-driven approach (Gemini optional, minimal).
 
 ## 1. Goal
 
 Create reliable, meaningful, relationship-aware seed data for key feature tables while keeping token usage near zero by default.
+
+Current branch note:
+
+- `scripts/seed.ts` and `scripts/seed-profiles.ts` already exist on the merged branch.
+- `feature3` has been merged into this branch, so the task-table naming fix and CI/lint cleanup are already part of the baseline.
+- This plan now tracks the remaining profile expansion and validation work rather than the original bootstrap work.
 
 ## 2. Canonical Table Scope (ALL CAPS, Deduplicated)
 
@@ -237,18 +243,14 @@ Guardrails:
 
 ## 13. Immediate Next Steps
 
-1. Implement profile framework in `scripts/seed.ts`.
-2. Deliver first profile set: `MACHINE`, `EMPSCHEDULE`, `GLOBALSCHEDULE`.
-3. Add validation summary output and run one full smoke seed.
+1. Extend profile coverage for the remaining high-value tables that still need dedicated generators.
+2. Add or refine validation summary output for the profile-backed seed modes.
+3. Run smoke seeds against the current merged branch and keep the docs aligned with the implemented tables.
 
 ## 14. Session Restart Notes
 
 1. Current working branch for this effort: `chore/seed-data-refinement`.
-2. Branch coordination rule: merge/rebase with `feature3` before targeting `main`.
-3. Reason: required fixes exist in `feature3`, and its PR to `main` was still pending approval at handoff time.
-4. Practical restart flow:
-   - sync local `feature3`
-   - merge/rebase `feature3` into `chore/seed-data-refinement`
-   - resolve conflicts
-   - rerun smoke checks (`npm run seed:profiles` and one profile-backed dynamic seed command)
-5. Do not assume `main` contains the latest `feature3` fixes until that PR is merged.
+2. `feature3` is already merged into this branch as of 2026-04-05.
+3. That merge brought in the task-table naming fix, CI/lint cleanup, and the shared AI integration baseline.
+4. If the work is restarted later, continue from this merged branch and verify the shared fixes are still present before comparing against `main`.
+5. Rerun smoke checks (`npm run seed:profiles` and one profile-backed dynamic seed command) after any future branch rebase.
