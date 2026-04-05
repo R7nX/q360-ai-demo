@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { Q360RecordRow } from "@/lib/domain/normalizers";
 import { fetchQ360Json, isMockMode } from "@/lib/q360/client";
+import { listMockRecordRows } from "@/lib/q360/mock-sqlite";
 import { mockPhase1RowsBySource } from "@/mock/q360/phase1";
 
 export type RecordListFilter = {
@@ -176,7 +177,7 @@ function applyMockQuery(
     limit,
     offset,
     rows: projectedRows,
-    sourceName: normalizedSourceName,
+    sourceName: `fixtures:${normalizedSourceName}`,
   };
 }
 
@@ -197,7 +198,10 @@ export async function listQ360Records(
   const normalizedSourceName = normalizeSourceName(sourceName);
 
   if (isMockMode()) {
-    return applyMockQuery(normalizedSourceName, request);
+    return (
+      listMockRecordRows(normalizedSourceName, request) ??
+      applyMockQuery(normalizedSourceName, request)
+    );
   }
 
   const body = createRecordListBody(request);

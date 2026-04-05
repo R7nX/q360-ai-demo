@@ -27,6 +27,7 @@
 
 import Database from 'better-sqlite3'
 import { faker } from '@faker-js/faker'
+import path from 'path'
 
 // Load .env.local (Node 20+ built-in — no dotenv needed)
 try {
@@ -50,7 +51,12 @@ if (!TABLE) {
 const BASE_URL = process.env.Q360_BASE_URL
 const USERNAME = process.env.Q360_API_USERNAME
 const PASSWORD = process.env.Q360_API_PASSWORD
-const DB_PATH  = 'mock.db'
+const DATABASE_URL = process.env.DATABASE_URL
+const DB_PATH  = DATABASE_URL?.startsWith('file:')
+  ? path.isAbsolute(DATABASE_URL.slice(5))
+    ? DATABASE_URL.slice(5)
+    : path.resolve(process.cwd(), DATABASE_URL.slice(5).replace(/^\.\//, ''))
+  : path.resolve(process.cwd(), 'mock.db')
 
 if (!BASE_URL || !USERNAME || !PASSWORD) {
   console.error('Missing required env vars: Q360_BASE_URL, Q360_API_USERNAME, Q360_API_PASSWORD')

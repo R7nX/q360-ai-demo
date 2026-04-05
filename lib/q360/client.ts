@@ -55,7 +55,9 @@ export class Q360ApiError extends Error {
 }
 
 export function isMockMode(): boolean {
-  return process.env.Q360_MOCK_MODE === "true";
+  return (
+    process.env.USE_MOCK_DATA === "true" || process.env.Q360_MOCK_MODE === "true"
+  );
 }
 
 export function getQ360Config() {

@@ -81,6 +81,14 @@ function getTaskStatus(task: {
   };
 }
 
+function isMockDbSource(value: string | null | undefined): boolean {
+  return Boolean(value?.startsWith("mock.db:"));
+}
+
+function isFixtureSource(value: string | null | undefined): boolean {
+  return Boolean(value?.startsWith("fixtures:"));
+}
+
 export default async function Feature1Page() {
   try {
     const overview = await getBusinessOverview({
@@ -91,6 +99,10 @@ export default async function Feature1Page() {
       recommendationLimit: 4,
       taskLimit: 9,
     });
+    const usingMockDb =
+      isMockDbSource(overview.dataSources.projects) || isMockDbSource(overview.dataSources.tasks);
+    const usingFixtureFallback =
+      isFixtureSource(overview.dataSources.projects) || isFixtureSource(overview.dataSources.tasks);
 
     return (
       <main className="min-h-screen bg-slate-50">
@@ -103,12 +115,18 @@ export default async function Feature1Page() {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold tracking-tight text-slate-900">
-                    Project and task visibility, backed by live-safe Q360 reads.
+                    {usingMockDb
+                      ? "Project and task visibility, backed by mock.db."
+                      : usingFixtureFallback
+                        ? "Project and task visibility, backed by bundled mock fixtures."
+                        : "Project and task visibility, backed by live-safe Q360 reads."}
                   </h1>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
-                    This first Team 1 page is centered on the confirmed project and task feeds.
-                    Service, sales, and accounting will be added in later stages once their live
-                    source strategy is locked.
+                    {usingMockDb
+                      ? "This Team 1 page now prefers the local SQLite mock database in mock mode. Seed compatible project and task tables to drive the manager view, then add activity and billing tables for richer recommendations."
+                      : usingFixtureFallback
+                        ? "This Team 1 page is in fallback mock mode because mock.db does not yet have compatible Team 1 tables. Seed project and task tables to replace the bundled fixtures."
+                        : "This first Team 1 page is centered on the confirmed project and task feeds. Service, sales, and accounting will be added in later stages once their live source strategy is locked."}
                   </p>
                 </div>
               </div>
@@ -177,7 +195,7 @@ export default async function Feature1Page() {
                   {formatTimestamp(overview.generatedAt)}
                 </div>
                 <div className="mt-2 text-sm text-slate-600">
-                  Live task source: {overview.dataSources.tasks}
+                  Task source: {overview.dataSources.tasks}
                 </div>
               </div>
             </div>

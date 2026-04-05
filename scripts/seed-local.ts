@@ -11,8 +11,21 @@
 
 import Database from "better-sqlite3";
 import { faker } from "@faker-js/faker";
+import path from "path";
 
-const DB_PATH = "mock.db";
+try {
+  process.loadEnvFile(".env.local");
+} catch {
+  // .env.local not found — fall back to system environment variables
+}
+
+const databaseUrl = process.env.DATABASE_URL;
+const DB_PATH =
+  databaseUrl?.startsWith("file:")
+    ? path.isAbsolute(databaseUrl.slice(5))
+      ? databaseUrl.slice(5)
+      : path.resolve(process.cwd(), databaseUrl.slice(5).replace(/^\.\//, ""))
+    : path.resolve(process.cwd(), "mock.db");
 const DISPATCH_COUNT = 20;
 const CUSTOMER_COUNT = 10;
 const SITE_COUNT = 12;

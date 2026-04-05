@@ -1,5 +1,9 @@
+import Database from "better-sqlite3";
+import fs from "fs";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import os from "os";
+import path from "path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,6 +16,230 @@ import {
 import { clearListActionCache } from "@/lib/q360/list-actions";
 
 const server = setupServer();
+const tempDirectories = new Set<string>();
+
+function createFeature1MockDb(): string {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "q360-team1-business-read-"));
+  tempDirectories.add(tempDir);
+
+  const dbPath = path.join(tempDir, "feature1.sqlite");
+  const db = new Database(dbPath);
+
+  try {
+    db.exec(`
+      CREATE TABLE projects (
+        PROJECTNO TEXT PRIMARY KEY,
+        TITLE TEXT,
+        CUSTOMERNO TEXT,
+        CUSTOMER_COMPANY TEXT,
+        STATUSCODE TEXT,
+        ENDDATE TEXT,
+        STARTDATE TEXT,
+        PROJECTLEADER TEXT,
+        MODDATE TEXT,
+        PERCENTCOMPLETE TEXT,
+        HOURSBUDGET TEXT,
+        REVENUEBUDGET TEXT,
+        SITENO TEXT,
+        SALESREP TEXT
+      );
+      CREATE TABLE projectschedule (
+        PROJECTSCHEDULENO TEXT PRIMARY KEY,
+        PROJECTNO TEXT,
+        PROJECTTITLE TEXT,
+        TITLE TEXT,
+        STATUSCODE TEXT,
+        ENDDATE TEXT,
+        ASSIGNEE TEXT,
+        SCHED TEXT,
+        MODDATE TEXT,
+        SEQ TEXT
+      );
+      CREATE TABLE projectevents (
+        PROJEVENTNO TEXT PRIMARY KEY,
+        PROJECTNO TEXT,
+        USERID TEXT,
+        DATE TEXT,
+        TYPE TEXT,
+        COMMENT TEXT
+      );
+      CREATE TABLE timebill (
+        TIMEBILLNO TEXT PRIMARY KEY,
+        PROJECTNO TEXT,
+        CUSTOMERNO TEXT,
+        DATE TEXT,
+        TIMEBILLED TEXT,
+        CATEGORY TEXT,
+        DESCRIPTION TEXT
+      );
+    `);
+
+    const insertProject = db.prepare(`
+      INSERT INTO projects (
+        PROJECTNO, TITLE, CUSTOMERNO, CUSTOMER_COMPANY, STATUSCODE, ENDDATE, STARTDATE,
+        PROJECTLEADER, MODDATE, PERCENTCOMPLETE, HOURSBUDGET, REVENUEBUDGET, SITENO, SALESREP
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertProject.run(
+      "P-1001",
+      "Campus AV Refresh",
+      "C10025",
+      "North Peak University",
+      "ACTIVE",
+      "2026-03-28 00:00:00.000",
+      "2026-02-10 00:00:00.000",
+      "JMILLER",
+      "2026-03-20 14:15:00.000",
+      "72",
+      "120",
+      "85000",
+      "S-1001",
+      "JMILLER",
+    );
+    insertProject.run(
+      "P-1002",
+      "Clinic Exam Room Expansion",
+      "C10026",
+      "Summit Health",
+      "ACTIVE",
+      "2026-03-18 00:00:00.000",
+      "2026-01-22 00:00:00.000",
+      "RLEE",
+      "2026-03-01 09:00:00.000",
+      "58",
+      "96",
+      "64000",
+      "S-1002",
+      "RLEE",
+    );
+    insertProject.run(
+      "P-1003",
+      "Council Chamber Modernization",
+      "C10027",
+      "City of Fairfield",
+      "PLANNING",
+      "2026-04-11 00:00:00.000",
+      "2026-03-02 00:00:00.000",
+      "KADAMS",
+      "2026-03-22 16:40:00.000",
+      "22",
+      "140",
+      "132000",
+      "S-1003",
+      "KADAMS",
+    );
+
+    const insertTask = db.prepare(`
+      INSERT INTO projectschedule (
+        PROJECTSCHEDULENO, PROJECTNO, PROJECTTITLE, TITLE, STATUSCODE, ENDDATE,
+        ASSIGNEE, SCHED, MODDATE, SEQ
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertTask.run(
+      "TS-1001",
+      "P-1001",
+      "Campus AV Refresh",
+      "Secure procurement approval",
+      "INPROGRESS",
+      "2026-03-19 00:00:00.000",
+      "JMILLER",
+      "Waiting on final client sign-off before procurement can start.",
+      "2026-03-18 13:10:00.000",
+      "10",
+    );
+    insertTask.run(
+      "TS-1002",
+      "P-1002",
+      "Clinic Exam Room Expansion",
+      "Update margin worksheet",
+      "NOTSTARTED",
+      "2026-03-24 00:00:00.000",
+      "RLEE",
+      "Finance needs revised margin worksheet.",
+      "2026-03-23 15:45:00.000",
+      "20",
+    );
+    insertTask.run(
+      "TS-1003",
+      "P-1003",
+      "Council Chamber Modernization",
+      "Confirm room counts",
+      "WAITING",
+      "2026-03-25 00:00:00.000",
+      "KADAMS",
+      "Awaiting customer confirmation on room counts.",
+      "2026-03-22 11:30:00.000",
+      "30",
+    );
+
+    const insertEvent = db.prepare(`
+      INSERT INTO projectevents (PROJEVENTNO, PROJECTNO, USERID, DATE, TYPE, COMMENT)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    insertEvent.run(
+      "EV-1001",
+      "P-1001",
+      "JMILLER",
+      "2026-03-21 10:30:00.000",
+      "NOTE",
+      "Client approved revised project plan.",
+    );
+    insertEvent.run(
+      "EV-1002",
+      "P-1002",
+      "RLEE",
+      "2026-03-18 15:10:00.000",
+      "FINANCE",
+      "Billing review flagged missing labor markup.",
+    );
+    insertEvent.run(
+      "EV-1003",
+      "P-1003",
+      "KADAMS",
+      "2026-03-22 08:45:00.000",
+      "HANDOFF",
+      "Sales handoff package sent to PM.",
+    );
+
+    const insertTimebill = db.prepare(`
+      INSERT INTO timebill (TIMEBILLNO, PROJECTNO, CUSTOMERNO, DATE, TIMEBILLED, CATEGORY, DESCRIPTION)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertTimebill.run(
+      "TB-1001",
+      "P-1001",
+      "C10025",
+      "2026-03-21 16:00:00.000",
+      "5.5",
+      "LABOR",
+      "Rack integration and testing",
+    );
+    insertTimebill.run(
+      "TB-1002",
+      "P-1002",
+      "C10026",
+      "2026-03-20 11:15:00.000",
+      "3.0",
+      "LABOR",
+      "Site walk and pricing update",
+    );
+    insertTimebill.run(
+      "TB-1003",
+      "P-1003",
+      "C10027",
+      "2026-03-22 17:00:00.000",
+      "4.25",
+      "ENGINEERING",
+      "Design package revision",
+    );
+  } finally {
+    db.close();
+  }
+
+  return dbPath;
+}
 
 describe("business read adapter", () => {
   beforeAll(() => {
@@ -23,21 +251,27 @@ describe("business read adapter", () => {
     server.resetHandlers();
     vi.useRealTimers();
     vi.unstubAllEnvs();
+    for (const tempDirectory of tempDirectories) {
+      fs.rmSync(tempDirectory, { force: true, recursive: true });
+    }
+    tempDirectories.clear();
   });
 
   afterAll(() => {
     server.close();
   });
 
-  it("returns project progress from the project list endpoint in mock mode", async () => {
-    vi.stubEnv("Q360_MOCK_MODE", "true");
+  it("returns project progress from mock.db in mock mode", async () => {
+    const dbPath = createFeature1MockDb();
+    vi.stubEnv("USE_MOCK_DATA", "true");
+    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
 
     const result = await getProjectProgress(10);
 
-    expect(result.sourceName).toBe("Project");
-    expect(result.taskSourceName).toBe("Task");
+    expect(result.sourceName).toBe("mock.db:projects");
+    expect(result.taskSourceName).toBe("mock.db:projectschedule");
     expect(result.projects).toHaveLength(3);
     expect(result.summary.totalCount).toBe(3);
     expect(result.summary.activeCount).toBe(3);
@@ -46,14 +280,16 @@ describe("business read adapter", () => {
     expect(result.projects.every((project) => project.lastActivityAt !== null)).toBe(true);
   });
 
-  it("returns follow-up pressure from the task list endpoint in mock mode", async () => {
-    vi.stubEnv("Q360_MOCK_MODE", "true");
+  it("returns follow-up pressure from mock.db in mock mode", async () => {
+    const dbPath = createFeature1MockDb();
+    vi.stubEnv("USE_MOCK_DATA", "true");
+    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
 
     const result = await getFollowUps(10);
 
-    expect(result.sourceName).toBe("Task");
+    expect(result.sourceName).toBe("mock.db:projectschedule");
     expect(result.tasks).toHaveLength(3);
     expect(result.summary.totalCount).toBe(3);
     expect(result.summary.overdueTaskCount).toBe(1);
@@ -62,29 +298,35 @@ describe("business read adapter", () => {
     expect(result.tasks.every((task) => task.updatedAt !== null)).toBe(true);
   });
 
-  it("returns a project activity stream in mock mode", async () => {
-    vi.stubEnv("Q360_MOCK_MODE", "true");
+  it("returns a project activity stream from mock.db in mock mode", async () => {
+    const dbPath = createFeature1MockDb();
+    vi.stubEnv("USE_MOCK_DATA", "true");
+    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
 
     const result = await getProjectActivityStream(10);
 
-    expect(result.sourceName).toBe("PROJECTEVENTS");
+    expect(result.sourceName).toBe("mock.db:projectevents");
     expect(result.activities).toHaveLength(3);
     expect(result.summary.handoffCount).toBe(1);
     expect(result.summary.financeCount).toBe(1);
   });
 
-  it("returns a time and billing summary in mock mode", async () => {
-    vi.stubEnv("Q360_MOCK_MODE", "true");
+  it("returns a time and billing summary from mock.db in mock mode", async () => {
+    const dbPath = createFeature1MockDb();
+    vi.stubEnv("USE_MOCK_DATA", "true");
+    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
 
     const result = await getBillingSummary(10);
 
-    expect(result.sourceName).toBe("TIMEBILL");
+    expect(result.sourceName).toBe("mock.db:timebill");
     expect(result.entries).toHaveLength(3);
     expect(result.summary.totalHoursBilled).toBe(12.75);
   });
 
-  it("builds a business overview with activity and billing in mock mode", async () => {
-    vi.stubEnv("Q360_MOCK_MODE", "true");
+  it("builds a business overview with activity and billing from mock.db", async () => {
+    const dbPath = createFeature1MockDb();
+    vi.stubEnv("USE_MOCK_DATA", "true");
+    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
 
@@ -95,10 +337,10 @@ describe("business read adapter", () => {
       taskLimit: 2,
     });
 
-    expect(overview.dataSources.projects).toBe("Project");
-    expect(overview.dataSources.tasks).toBe("Task");
-    expect(overview.dataSources.activity).toBe("PROJECTEVENTS");
-    expect(overview.dataSources.billing).toBe("TIMEBILL");
+    expect(overview.dataSources.projects).toBe("mock.db:projects");
+    expect(overview.dataSources.tasks).toBe("mock.db:projectschedule");
+    expect(overview.dataSources.activity).toBe("mock.db:projectevents");
+    expect(overview.dataSources.billing).toBe("mock.db:timebill");
     expect(overview.projectProgress.projects).toHaveLength(2);
     expect(overview.followUps.tasks).toHaveLength(2);
     expect(overview.activityStream?.activities).toHaveLength(2);

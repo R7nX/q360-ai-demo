@@ -1,5 +1,9 @@
+import Database from "better-sqlite3";
+import fs from "fs";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import os from "os";
+import path from "path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
@@ -9,6 +13,23 @@ import {
 } from "@/lib/q360/list-actions";
 
 const server = setupServer();
+const tempDirectories = new Set<string>();
+
+function createTempDb(setup: (db: Database.Database) => void): string {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "q360-team1-list-actions-"));
+  tempDirectories.add(tempDir);
+
+  const dbPath = path.join(tempDir, "feature1.sqlite");
+  const db = new Database(dbPath);
+
+  try {
+    setup(db);
+  } finally {
+    db.close();
+  }
+
+  return dbPath;
+}
 
 describe("Q360 list-action adapter", () => {
   beforeAll(() => {
@@ -19,19 +40,90 @@ describe("Q360 list-action adapter", () => {
     clearListActionCache();
     server.resetHandlers();
     vi.unstubAllEnvs();
+    for (const tempDirectory of tempDirectories) {
+      fs.rmSync(tempDirectory, { force: true, recursive: true });
+    }
+    tempDirectories.clear();
   });
 
   afterAll(() => {
     server.close();
   });
 
-  it("returns mock project and task rows in mock mode", async () => {
-    vi.stubEnv("Q360_MOCK_MODE", "true");
+  it("returns project and task rows from mock.db in mock mode", async () => {
+    const dbPath = createTempDb((db) => {
+      db.exec(`
+        CREATE TABLE projects (
+          PROJECTNO TEXT PRIMARY KEY,
+          TITLE TEXT,
+          CUSTOMERNO TEXT,
+          STATUSCODE TEXT,
+          ENDDATE TEXT,
+          PROJECTLEADER TEXT,
+          MODDATE TEXT
+        );
+        CREATE TABLE projectschedule (
+          PROJECTSCHEDULENO TEXT PRIMARY KEY,
+          PROJECTNO TEXT,
+          TITLE TEXT,
+          STATUSCODE TEXT,
+          ENDDATE TEXT,
+          ASSIGNEE TEXT,
+          SCHED TEXT,
+          MODDATE TEXT
+        );
+      `);
+
+      db.prepare(`
+        INSERT INTO projects (PROJECTNO, TITLE, CUSTOMERNO, STATUSCODE, ENDDATE, PROJECTLEADER, MODDATE)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        "P-DB-1001",
+        "SQLite Project",
+        "C10025",
+        "ACTIVE",
+        "2026-03-28 00:00:00.000",
+        "JMILLER",
+        "2026-03-21 10:00:00.000",
+      );
+      db.prepare(`
+        INSERT INTO projectschedule (PROJECTSCHEDULENO, PROJECTNO, TITLE, STATUSCODE, ENDDATE, ASSIGNEE, SCHED, MODDATE)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        "TS-DB-1001",
+        "P-DB-1001",
+        "SQLite Task",
+        "INPROGRESS",
+        "2026-03-24 00:00:00.000",
+        "JMILLER",
+        "Generated from mock.db",
+        "2026-03-23 09:30:00.000",
+      );
+    });
+
+    vi.stubEnv("USE_MOCK_DATA", "true");
+    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
 
     const [projects, tasks] = await Promise.all([listProjectRows(), listTaskRows()]);
 
-    expect(projects.sourceName).toBe("Project");
-    expect(tasks.sourceName).toBe("Task");
+    expect(projects.sourceName).toBe("mock.db:projects");
+    expect(tasks.sourceName).toBe("mock.db:projectschedule");
+    expect(projects.rows).toHaveLength(1);
+    expect(tasks.rows).toHaveLength(1);
+    expect(projects.rows[0]?.PROJECTNO).toBe("P-DB-1001");
+    expect(tasks.rows[0]?.PROJECTSCHEDULENO).toBe("TS-DB-1001");
+  });
+
+  it("falls back to bundled fixtures when mock.db does not have compatible Team 1 tables", async () => {
+    const missingDbPath = path.join(os.tmpdir(), "q360-team1-list-actions-missing.sqlite");
+
+    vi.stubEnv("USE_MOCK_DATA", "true");
+    vi.stubEnv("DATABASE_URL", `file:${missingDbPath}`);
+
+    const [projects, tasks] = await Promise.all([listProjectRows(), listTaskRows()]);
+
+    expect(projects.sourceName).toBe("fixtures:Project");
+    expect(tasks.sourceName).toBe("fixtures:Task");
     expect(projects.rows.length).toBeGreaterThan(0);
     expect(tasks.rows.length).toBeGreaterThan(0);
   });

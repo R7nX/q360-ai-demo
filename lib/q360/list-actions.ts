@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { Q360RecordRow } from "@/lib/domain/normalizers";
 import { fetchQ360Json, isMockMode } from "@/lib/q360/client";
+import { listMockProjectRows, listMockTaskRows } from "@/lib/q360/mock-sqlite";
 import { mockProjectRows, mockTaskRows } from "@/mock/q360/project-monitor";
 
 type ListActionResult = {
@@ -29,7 +30,7 @@ function buildCacheKey(
 ): string {
   const cacheScope = isMockMode()
     ? "mock"
-    : `live:${process.env.Q360_BASE_URL ?? ""}:${process.env.Q360_API_USER ?? ""}`;
+    : `live:${process.env.Q360_BASE_URL ?? ""}:${process.env.Q360_API_USER ?? process.env.Q360_API_USERNAME ?? ""}`;
 
   return `${cacheScope}:${entityName}:${options.projectNo ?? ""}`;
 }
@@ -119,14 +120,26 @@ export async function listProjectRows(
 
   const nextRequest = (async () => {
     if (isMockMode()) {
-      const rows = options.projectNo
-        ? mockProjectRows.filter((row) => row.projectno === options.projectNo)
-        : mockProjectRows;
-
-      const result = {
-        rows: sortRowsByDate(rows, ["enddate", "installdate", "startdate"], "asc"),
-        sourceName: "Project",
-      } satisfies ListActionResult;
+      const sqliteResult = listMockProjectRows(options);
+      const result = sqliteResult
+        ? {
+            rows: sortRowsByDate(
+              sqliteResult.rows,
+              ["enddate", "installdate", "startdate"],
+              "asc",
+            ),
+            sourceName: sqliteResult.sourceName,
+          }
+        : {
+            rows: sortRowsByDate(
+              options.projectNo
+                ? mockProjectRows.filter((row) => row.projectno === options.projectNo)
+                : mockProjectRows,
+              ["enddate", "installdate", "startdate"],
+              "asc",
+            ),
+            sourceName: "fixtures:Project",
+          };
 
       setCachedValue(cacheKey, result);
       return result;
@@ -173,14 +186,22 @@ export async function listTaskRows(
 
   const nextRequest = (async () => {
     if (isMockMode()) {
-      const rows = options.projectNo
-        ? mockTaskRows.filter((row) => row.projectno === options.projectNo)
-        : mockTaskRows;
-
-      const result = {
-        rows: sortRowsByDate(rows, ["enddate"], "asc"),
-        sourceName: "Task",
-      } satisfies ListActionResult;
+      const sqliteResult = listMockTaskRows(options);
+      const result = sqliteResult
+        ? {
+            rows: sortRowsByDate(sqliteResult.rows, ["enddate"], "asc"),
+            sourceName: sqliteResult.sourceName,
+          }
+        : {
+            rows: sortRowsByDate(
+              options.projectNo
+                ? mockTaskRows.filter((row) => row.projectno === options.projectNo)
+                : mockTaskRows,
+              ["enddate"],
+              "asc",
+            ),
+            sourceName: "fixtures:Task",
+          };
 
       setCachedValue(cacheKey, result);
       return result;
