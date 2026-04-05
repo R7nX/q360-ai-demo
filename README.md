@@ -19,6 +19,18 @@ The app scaffold and local tooling are in place, including:
 - Next.js 16 + React 19 project structure
 - Local SQLite mock database (`mock.db`)
 - Seeder script that pulls Q360 table schema and generates synthetic rows
+- Feature 2 shared AI routes:
+  - `/api/ai/draft-email`
+  - `/api/ai/summarize`
+  - `/api/ai/recommend`
+  - `/api/ai/status-report`
+  - `/api/ai/smart-reply`
+- Feature 2 shared AI components:
+  - `EmailDrafter`
+  - `DataSummary`
+  - `ActionRecommender`
+  - `StatusReport`
+  - `SmartReply`
 - Core planning docs (`docs/plans/PROJECT_MASTER_PLAN.md`, `docs/reference/API_STRUCTURE.md`, `docs/plans/FEATURE_TAB_MAPPING.md`)
 
 ## Tech Stack
