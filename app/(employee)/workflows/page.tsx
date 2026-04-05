@@ -1,3 +1,6 @@
+/**
+ * Static workflow guidance (dispatch follow-up, service steps) for field employees.
+ */
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";
 import { WorkflowGuide } from "@/components/ai/employee/WorkflowGuide";
 

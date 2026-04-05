@@ -1,3 +1,6 @@
+/**
+ * Integration-style tests for shared AI API routes (summarize, recommend, smart-reply, status-report).
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {

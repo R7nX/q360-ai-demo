@@ -1,3 +1,7 @@
+/**
+ * POST /api/feature2/overdue — batches open dispatches, scores overdue risk, and returns AI analysis
+ * for the overdue-alert automation (mock DB or fallbacks).
+ */
 import { generateJSON } from "@/lib/agentClient";
 import {
   getDispatchesFromMockDb,

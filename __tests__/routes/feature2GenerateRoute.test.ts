@@ -1,3 +1,6 @@
+/**
+ * Tests for `POST /api/feature2/generate` (Feature 2 streaming email generation).
+ */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Dispatch, Customer, Site } from "@/types/q360";
 

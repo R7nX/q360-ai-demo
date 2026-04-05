@@ -1,3 +1,6 @@
+/**
+ * Unit tests for `lib/aiToolsService` tool entrypoints with mocked AI and entity resolver.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockGenerateJSON, mockResolveEntity } = vi.hoisted(() => ({

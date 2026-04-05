@@ -1,3 +1,6 @@
+/**
+ * Unit tests for `lib/draftEmailService` (streaming vs JSON, intent/tone normalization, mocks).
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {

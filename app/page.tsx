@@ -1,3 +1,6 @@
+/**
+ * Marketing-style landing page linking to feature demos (command center, utility suite, employee hub).
+ */
 import Link from "next/link";
 import { Zap, LayoutDashboard, GitBranch, ArrowRight } from "lucide-react";
 

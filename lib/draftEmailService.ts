@@ -1,3 +1,6 @@
+/**
+ * Email drafting pipeline: normalize API inputs, resolve entities, pick prompts, stream or return JSON.
+ */
 import { generateJSON, generateStream, MODEL } from "@/lib/agentClient";
 import { resolveEntity } from "@/lib/entityResolver";
 import {

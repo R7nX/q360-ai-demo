@@ -1,3 +1,6 @@
+/**
+ * Client widget that calls `/api/ai/summarize` and shows condensed output plus actions.
+ */
 "use client";
 
 import { useCallback, useState } from "react";

@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/contacts — Q360 contacts with optional query filters.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getContacts } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";

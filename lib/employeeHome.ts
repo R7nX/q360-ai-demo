@@ -1,3 +1,6 @@
+/**
+ * Data loaders and shapes for employee demo pages (home, dispatches, tasks, schedule, time).
+ */
 import {
   FALLBACK_CUSTOMERS,
   FALLBACK_DISPATCHES,

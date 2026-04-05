@@ -1,3 +1,6 @@
+/**
+ * Client widget that calls `/api/ai/recommend` and renders ranked next-step suggestions.
+ */
 "use client";
 
 import { useCallback, useState } from "react";

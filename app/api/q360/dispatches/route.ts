@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/dispatches — filtered list of service dispatches from Q360 (or errors as JSON).
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getDispatches } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";

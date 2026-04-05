@@ -1,3 +1,6 @@
+/**
+ * Server-side AI “tools” (summarize, recommend, smart reply, status report) built on `agentClient` + entity resolution.
+ */
 import { generateJSON, MODEL } from "@/lib/agentClient";
 import { resolveEntity } from "@/lib/entityResolver";
 import type { AiEntityType, AiToolResponse, ToneOption } from "@/types/feature2";

@@ -1,3 +1,7 @@
+/**
+ * POST /api/feature2/generate — streams an automation email (project status, closure, overdue, etc.)
+ * for a selected dispatch using Feature 2 types and draft-email plumbing.
+ */
 import { NextRequest } from "next/server";
 import {
   generateDraftStream,

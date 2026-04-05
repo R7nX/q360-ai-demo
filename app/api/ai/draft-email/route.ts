@@ -1,3 +1,7 @@
+/**
+ * POST /api/ai/draft-email — generates customer-facing email drafts from Q360 entity context.
+ * Supports JSON responses or streamed text for the email drafter UI.
+ */
 import { NextRequest } from "next/server";
 import {
   generateDraftJson,

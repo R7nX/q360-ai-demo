@@ -1,3 +1,6 @@
+/**
+ * Sticky-style page header with title, description, and notification/user affordances.
+ */
 import { Bell, CircleUserRound } from "lucide-react";
 
 type EmployeeHeaderProps = {

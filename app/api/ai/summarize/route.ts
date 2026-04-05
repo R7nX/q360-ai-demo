@@ -1,3 +1,6 @@
+/**
+ * POST /api/ai/summarize — condenses long text or fields into a short summary with metadata.
+ */
 import { NextRequest } from "next/server";
 import {
   normalizeAudience,

@@ -1,3 +1,6 @@
+/**
+ * Client widget that calls `/api/ai/status-report` for a narrative status block.
+ */
 "use client";
 
 import { useCallback, useState } from "react";

@@ -1,3 +1,6 @@
+/**
+ * Dispatch detail view with AI email assistant for a single dispatch number.
+ */
 import Link from "next/link";
 import { notFound } from "next/navigation";
 

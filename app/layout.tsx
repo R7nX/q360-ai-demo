@@ -1,3 +1,6 @@
+/**
+ * Root Next.js layout: global fonts, metadata, and document shell for the Q360 AI demo.
+ */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

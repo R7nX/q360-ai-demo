@@ -1,3 +1,6 @@
+/**
+ * Client widget that calls `/api/ai/smart-reply` and offers copy-to-clipboard for suggested text.
+ */
 "use client";
 
 import { useCallback, useState } from "react";

@@ -1,3 +1,6 @@
+/**
+ * POST /api/ai/recommend — returns AI “next step” recommendations for a dispatch or related entity.
+ */
 import { NextRequest } from "next/server";
 import {
   normalizeAudience,

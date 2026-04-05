@@ -1,3 +1,6 @@
+/**
+ * Low-level Gemini client using `@google/genai`: JSON completion and SSE-friendly streaming helpers.
+ */
 import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });

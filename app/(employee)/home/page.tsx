@@ -1,3 +1,6 @@
+/**
+ * Employee home dashboard: briefing, open dispatches, tasks, and quick time entry.
+ */
 import { DailyBriefing } from "@/components/ai/employee/DailyBriefing";
 import { DispatchCard } from "@/components/ai/employee/DispatchCard";
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";

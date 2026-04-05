@@ -1,4 +1,7 @@
-// Types for Feature 2: Automated Utility Suite
+/**
+ * TypeScript contracts for Feature 2 (Automated Utility Suite): automation kinds, API payloads,
+ * overdue scanner models, and shared AI widget types (`AiEntityType`, tool responses).
+ */
 
 export type AutomationType =
   | "project-status"

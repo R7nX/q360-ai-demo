@@ -1,3 +1,6 @@
+/**
+ * Workflow topic metadata and AI-backed (or fallback) step generation for the workflows page.
+ */
 export type WorkflowGuideResult = {
   title: string;
   summary: string;

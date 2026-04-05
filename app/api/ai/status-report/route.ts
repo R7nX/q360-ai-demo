@@ -1,3 +1,6 @@
+/**
+ * POST /api/ai/status-report — produces a structured status narrative for the command-center UI.
+ */
 import { NextRequest } from "next/server";
 import {
   normalizeAudience,

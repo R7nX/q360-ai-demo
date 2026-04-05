@@ -1,3 +1,6 @@
+/**
+ * POST /api/ai/smart-reply — suggests concise reply text given thread or ticket context.
+ */
 import { NextRequest } from "next/server";
 import {
   normalizeAudience,

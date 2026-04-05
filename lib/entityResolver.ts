@@ -1,3 +1,6 @@
+/**
+ * Loads dispatch/customer/site/timebill context for AI routes from mock DB with Q360-shaped fallbacks.
+ */
 import {
   formatDispatchForPrompt,
   FALLBACK_DISPATCHES,

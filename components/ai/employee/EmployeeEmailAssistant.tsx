@@ -1,3 +1,6 @@
+/**
+ * Wraps Feature 2 email preview + tone controls for drafting from a dispatch detail page.
+ */
 "use client";
 
 import { useCallback, useState } from "react";

@@ -1,3 +1,6 @@
+/**
+ * Pure helper: days past expected fix or a 7-day default from open date for a dispatch.
+ */
 import type { Dispatch } from "@/types/q360";
 
 export function computeDaysOverdue(dispatch: Dispatch, today: Date): number {

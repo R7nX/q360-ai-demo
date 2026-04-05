@@ -1,3 +1,6 @@
+/**
+ * Feature 2 “Automated Utility Suite” page: pick a dispatch, automation type, and tone; stream or preview email output.
+ */
 "use client";
 
 import { useCallback, useState } from "react";

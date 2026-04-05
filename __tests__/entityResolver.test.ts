@@ -1,3 +1,6 @@
+/**
+ * Unit tests for `lib/entityResolver` (mock DB vs fallbacks, error types).
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Customer, Dispatch, Site, TimeBill } from "@/types/q360";
 
