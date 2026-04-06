@@ -75,7 +75,12 @@ export interface OverdueApiResponse {
 
 // ── Shared AI Tool Types (Layer B) ──
 
-export type AiEntityType = "dispatch";
+export type AiEntityType =
+  | "dispatch"
+  | "project"
+  | "customer"
+  | "servicecontract"
+  | "timebill";
 
 export type AiToneOption = ToneOption | "formal" | "urgent";
 

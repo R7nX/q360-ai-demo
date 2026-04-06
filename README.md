@@ -26,6 +26,7 @@ The app scaffold and local tooling are in place, including:
   - `/api/ai/status-report`
   - `/api/ai/smart-reply`
 - Feature 2 shared AI components:
+  - `EmailDrafter`
   - `DataSummary`
   - `ActionRecommender`
   - `StatusReport`
@@ -110,4 +111,3 @@ Defined in `.env.example`:
 
 - This project is a **demo/prototype**, not production software.
 - Keep secrets in `.env.local` only (never commit credentials).
-

@@ -88,7 +88,8 @@ describe("draftEmailService normalizers", () => {
   it("normalizes entity type with dispatch default", () => {
     expect(normalizeEntityType(undefined)).toBe("dispatch");
     expect(normalizeEntityType("dispatch")).toBe("dispatch");
-    expect(normalizeEntityType("project")).toBeNull();
+    expect(normalizeEntityType("project")).toBe("project");
+    expect(normalizeEntityType("customer")).toBe("customer");
     expect(normalizeEntityType("nope")).toBeNull();
   });
 
@@ -114,7 +115,7 @@ describe("draftEmailService normalizers", () => {
 });
 
 describe("generateDraftStream", () => {
-  it("resolves entity and generates stream with audience hint", async () => {
+  it("resolves entity and generates stream with audience and context hints", async () => {
     const stream = new ReadableStream<Uint8Array>();
     mockGenerateStream.mockResolvedValue(stream);
 
@@ -125,6 +126,7 @@ describe("generateDraftStream", () => {
       tone: "professional",
       audience: "internal",
       includeTimeBills: true,
+      context: { escalation: true },
     });
 
     expect(result).toBe(stream);
@@ -132,7 +134,7 @@ describe("generateDraftStream", () => {
       includeTimeBills: true,
     });
     expect(mockProjectStatusUserPrompt).toHaveBeenCalledWith(
-      "FORMATTED_DATA\nIntended Audience: internal",
+      'FORMATTED_DATA\nIntended Audience: internal\nAdditional Context:\n{\n  "escalation": true\n}',
       "professional"
     );
     expect(mockGenerateStream).toHaveBeenCalledWith("SYS_PROJECT", "USER_PROJECT");

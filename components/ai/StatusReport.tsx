@@ -6,18 +6,22 @@
 import { useCallback, useState } from "react";
 import { ClipboardList } from "lucide-react";
 import { API } from "@/lib/constants";
-import type { AiEntityType, AiToolResponse, ToneOption } from "@/types/feature2";
+import type {
+  AiEntityType,
+  AiToolResponse,
+  AiToneOption,
+} from "@/types/feature2";
 
-interface StatusReportProps {
+export interface StatusReportProps {
   entityId: string;
   entityType?: AiEntityType;
   intent?: string;
   audience?: "manager" | "customer" | "technician" | "internal";
-  tone?: ToneOption;
+  tone?: AiToneOption;
   context?: Record<string, unknown>;
 }
 
-export default function StatusReport({
+export function StatusReport({
   entityId,
   entityType = "dispatch",
   intent = "status-report",
@@ -101,3 +105,5 @@ export default function StatusReport({
     </div>
   );
 }
+
+export default StatusReport;

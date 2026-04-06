@@ -13,9 +13,21 @@
 
 ## Current Verified State
 
-- Tests pass: `npm test` -> `135` tests, `13` files
+- Tests pass: `npm test` -> `145` tests, `14` files
 - Lint pass: `npm run lint`
 - Build pass: `npm run build`
+
+## 2026-04-06 Review Follow-Up Applied
+
+- expanded the shared entity contract to the documented Team 2 set:
+  - `dispatch`
+  - `project`
+  - `customer`
+  - `servicecontract`
+  - `timebill`
+- updated shared entity resolution so `/api/ai/*` can resolve live Q360 records instead of relying only on mock DB and bundled demo fallbacks
+- added the missing shared `EmailDrafter` component and aligned shared component exports with the documented named-import handoff surface
+- preserved mock/fallback behavior for local/demo use rather than removing it
 
 ## Key Implementation Notes
 
@@ -23,6 +35,12 @@
   - `lib/entityResolver.ts`
   - `lib/draftEmailService.ts`
   - `lib/aiToolsService.ts`
+- Shared resolver now supports live Q360 resolution for:
+  - `dispatch`
+  - `project`
+  - `customer`
+  - `servicecontract`
+  - `timebill`
 - `/api/feature2/generate` is now a thin wrapper over shared draft logic.
 - `/api/ai/draft-email` supports `?format=json` and streaming default.
 - Shared routes now implemented:
@@ -31,6 +49,7 @@
   - `/api/ai/status-report`
   - `/api/ai/smart-reply`
 - Shared components now implemented and mounted on `/feature2` as a harness:
+  - `EmailDrafter`
   - `DataSummary`
   - `ActionRecommender`
   - `StatusReport`
@@ -38,7 +57,6 @@
 
 ## Remaining Known Gaps
 
-- `entityResolver` still resolves real data for dispatch-first flows; non-dispatch entity resolution is future work.
 - Need real sandbox validation with at least 3 real IDs per shared tool for final handoff confidence.
 - `PROJECT_MASTER_PLAN` still includes unrelated pending items (`app/api/n8n/webhook/route.ts`, `components/ai/AiToolWrapper.tsx`) not completed in this pass.
 

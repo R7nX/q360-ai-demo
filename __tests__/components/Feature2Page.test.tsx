@@ -3,7 +3,7 @@
  * Renders Feature 2 page with mocked fetch and verifies core selection and generate flows.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Feature2Page from "@/app/feature2/page";
 import type { RecordSummary } from "@/types/feature2";
@@ -42,7 +42,11 @@ beforeEach(() => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getSelect() {
-  return screen.getByRole("combobox") as HTMLSelectElement;
+  const section = screen.getByText("Select Record").closest("section");
+  if (!section) {
+    throw new Error("Select Record section not found");
+  }
+  return within(section).getByRole("combobox") as HTMLSelectElement;
 }
 
 function clickAutomation(name: RegExp | string) {

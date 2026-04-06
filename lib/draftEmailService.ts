@@ -13,9 +13,20 @@ import {
   serviceClosureSystemPrompt,
   serviceClosureUserPrompt,
 } from "@/lib/emailPrompts";
-import type { AiEntityType, AiToolResponse, ToneOption } from "@/types/feature2";
+import type {
+  AiEntityType,
+  AiToolResponse,
+  AiToneOption,
+  ToneOption,
+} from "@/types/feature2";
 
-const SUPPORTED_ENTITY_TYPES = ["dispatch"] as const;
+export const SUPPORTED_ENTITY_TYPES = [
+  "dispatch",
+  "project",
+  "customer",
+  "servicecontract",
+  "timebill",
+] as const;
 
 const SUPPORTED_AUDIENCES = [
   "customer",
@@ -34,7 +45,7 @@ export const SUPPORTED_EMAIL_INTENTS = [
 type SupportedAudience = (typeof SUPPORTED_AUDIENCES)[number];
 type SupportedEmailIntent = (typeof SUPPORTED_EMAIL_INTENTS)[number];
 
-type RouteTone = ToneOption | "formal" | "urgent";
+type RouteTone = AiToneOption;
 
 const INTENT_ALIASES: Record<string, SupportedEmailIntent> = {
   "project-status": "project-status",
@@ -69,6 +80,7 @@ export interface DraftEmailInput {
   tone: ToneOption;
   audience?: SupportedAudience;
   includeTimeBills?: boolean;
+  context?: Record<string, unknown>;
 }
 
 interface SplitDraft {
@@ -108,6 +120,7 @@ function buildPrompts(input: {
   tone: ToneOption;
   audience?: SupportedAudience;
   formatted: string;
+  context?: Record<string, unknown>;
 }): {
   systemPrompt: string;
   userPrompt: string;
@@ -115,13 +128,17 @@ function buildPrompts(input: {
   const audienceHint = input.audience
     ? `\nIntended Audience: ${input.audience}`
     : "";
+  const contextHint =
+    input.context && Object.keys(input.context).length > 0
+      ? `\nAdditional Context:\n${JSON.stringify(input.context, null, 2)}`
+      : "";
 
   switch (input.intent) {
     case "project-status":
       return {
         systemPrompt: projectStatusSystemPrompt(),
         userPrompt: projectStatusUserPrompt(
-          input.formatted + audienceHint,
+          input.formatted + audienceHint + contextHint,
           input.tone
         ),
       };
@@ -129,7 +146,7 @@ function buildPrompts(input: {
       return {
         systemPrompt: serviceClosureSystemPrompt(),
         userPrompt: serviceClosureUserPrompt(
-          input.formatted + audienceHint,
+          input.formatted + audienceHint + contextHint,
           input.tone
         ),
       };
@@ -137,14 +154,17 @@ function buildPrompts(input: {
       return {
         systemPrompt: overdueAlertSystemPrompt(),
         userPrompt: overdueAlertUserPrompt(
-          input.formatted + audienceHint,
+          input.formatted + audienceHint + contextHint,
           input.tone
         ),
       };
     case "new-call-ack":
       return {
         systemPrompt: newCallAckSystemPrompt(),
-        userPrompt: newCallAckUserPrompt(input.formatted + audienceHint, input.tone),
+        userPrompt: newCallAckUserPrompt(
+          input.formatted + audienceHint + contextHint,
+          input.tone
+        ),
       };
   }
 }
@@ -185,6 +205,7 @@ export async function generateDraftStream(
     tone: input.tone,
     audience: input.audience,
     formatted: resolved.formatted,
+    context: input.context,
   });
   return generateStream(prompts.systemPrompt, prompts.userPrompt);
 }
@@ -200,6 +221,7 @@ export async function generateDraftJson(
     tone: input.tone,
     audience: input.audience,
     formatted: resolved.formatted,
+    context: input.context,
   });
   const text = await generateJSON(prompts.systemPrompt, prompts.userPrompt, 4096);
   const split = splitDraftText(text);
