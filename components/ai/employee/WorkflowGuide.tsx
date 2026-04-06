@@ -1,3 +1,6 @@
+/**
+ * Topic picker + streamed workflow steps from `employeeWorkflowGuide` helpers.
+ */
 "use client";
 
 import { useState } from "react";

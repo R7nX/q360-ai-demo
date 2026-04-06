@@ -1,10 +1,14 @@
+/**
+ * Wraps Feature 2 email preview + tone controls for drafting from a dispatch detail page.
+ */
 "use client";
 
 import { useCallback, useState } from "react";
 
 import EmailPreviewPanel from "@/app/feature2/components/EmailPreviewPanel";
 import ToneSelector from "@/app/feature2/components/ToneSelector";
-import type { ToneOption } from "@/types/feature2";
+import { API } from "@/lib/constants";
+import type { AiToolResponse, ToneOption } from "@/types/feature2";
 
 type EmployeeEmailAssistantProps = {
   dispatchNo: string;
@@ -47,47 +51,30 @@ export function EmployeeEmailAssistant({
     setError(null);
 
     try {
-      const res = await fetch("/api/feature2/generate", {
+      const res = await fetch(`${API.AI_DRAFT_EMAIL}?format=json`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          recordType: "dispatch",
-          recordId: dispatchNo,
-          automationType,
+          entityType: "dispatch",
+          entityId: dispatchNo,
+          intent: automationType,
+          audience: "internal",
           tone,
         }),
       });
 
+      const payload = (await res.json()) as AiToolResponse;
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Error ${res.status}`);
+        throw new Error(payload.message || `Error ${res.status}`);
       }
 
-      const reader = res.body?.getReader();
-      if (!reader) {
-        throw new Error("No response stream available");
+      if (!payload.success || !payload.result) {
+        throw new Error(payload.message || "Generation failed");
       }
 
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        fullText += decoder.decode(value, { stream: true });
-
-        const subjectMatch = fullText.match(/^SUBJECT:\s*(.+?)(?:\n\n)/);
-        if (subjectMatch) {
-          setSubject(subjectMatch[1]);
-          const bodyStart = fullText.indexOf("\n\n") + 2;
-          setBody(fullText.slice(bodyStart));
-        } else if (fullText.startsWith("SUBJECT:")) {
-          setSubject(fullText.replace(/^SUBJECT:\s*/, ""));
-        } else {
-          setBody(fullText);
-        }
-      }
+      setSubject(payload.result.subject ?? "");
+      setBody(payload.result.content ?? "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed");
     } finally {
@@ -103,16 +90,15 @@ export function EmployeeEmailAssistant({
             Team 2 Email Integration
           </p>
           <h3 className="mt-2 text-lg font-semibold text-slate-900">
-            Draft a dispatch email from Feature 2
+            Draft a dispatch email from shared AI tools
           </h3>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            This panel reuses the existing Team 2 generation route for the
-            current dispatch without requiring the employee to leave the detail
-            page.
+            This panel uses the shared Team 2 draft-email route so employee and
+            manager experiences can reuse the same API contract.
           </p>
         </div>
         <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-          Live Team 2 route
+          Shared /api/ai/draft-email
         </div>
       </div>
 

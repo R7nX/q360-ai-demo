@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/timebills — Q360 time bill entries with optional query filters.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getTimeBills } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";

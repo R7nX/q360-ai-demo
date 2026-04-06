@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/tasks — tasks for the employee demo; backed by the local mock DB (optional `user` filter).
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getTasksFromMockDb } from "@/lib/mockDb";
 
