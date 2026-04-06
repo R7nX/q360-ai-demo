@@ -221,7 +221,7 @@ export const FALLBACK_DISPATCHES: Dispatch[] = [
     callno: "C-10005",
     customerno: "CUST006",
     siteno: "SITE014",
-    statuscode: "IN PROGRESS",
+    statuscode: "OPEN",
     problem: "Elevator #2 stuck between floors 8 and 9. Guests safely evacuated via stairs. Hotel at 95% occupancy for convention weekend.",
     solution: null,
     priority: "2",

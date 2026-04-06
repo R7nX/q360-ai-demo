@@ -29,7 +29,7 @@ export default function Feature2Page() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const harnessEntityId = selectedRecord?.id ?? "DEMO-002";
+  const harnessEntityId = selectedRecord?.id ?? "D-0009";
   const harnessContext = selectedRecord
     ? {
         selectedRecord: {
