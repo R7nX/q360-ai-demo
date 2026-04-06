@@ -15,13 +15,7 @@ import {
 } from "@/lib/emailPrompts";
 import type { AiEntityType, AiToolResponse, ToneOption } from "@/types/feature2";
 
-const SUPPORTED_ENTITY_TYPES = [
-  "dispatch",
-  "project",
-  "customer",
-  "servicecontract",
-  "timebill",
-] as const;
+const SUPPORTED_ENTITY_TYPES = ["dispatch"] as const;
 
 const SUPPORTED_AUDIENCES = [
   "customer",

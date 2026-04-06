@@ -88,6 +88,7 @@ describe("draftEmailService normalizers", () => {
   it("normalizes entity type with dispatch default", () => {
     expect(normalizeEntityType(undefined)).toBe("dispatch");
     expect(normalizeEntityType("dispatch")).toBe("dispatch");
+    expect(normalizeEntityType("project")).toBeNull();
     expect(normalizeEntityType("nope")).toBeNull();
   });
 

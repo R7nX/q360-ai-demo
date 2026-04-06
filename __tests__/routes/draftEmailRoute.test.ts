@@ -252,7 +252,7 @@ describe("POST /api/ai/draft-email", () => {
     );
 
     expect(res.status).toBe(400);
-    await expect(res.text()).resolves.toContain("not yet supported");
+    await expect(res.text()).resolves.toContain('Invalid entityType. Supported: "dispatch".');
   });
 
   it("returns 404 when dispatch cannot be resolved", async () => {
@@ -303,4 +303,3 @@ describe("POST /api/ai/draft-email", () => {
     await expect(res.text()).resolves.toContain("Failed to generate email");
   });
 });
-
