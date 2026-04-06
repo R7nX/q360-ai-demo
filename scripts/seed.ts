@@ -71,13 +71,13 @@ async function createPgAdapter(url: string): Promise<DbAdapter> {
   };
 }
 
-function getDbAdapter(): Promise<DbAdapter> {
+async function getDbAdapter(): Promise<{ db: DbAdapter; isPg: boolean }> {
   const useMock = process.env.USE_MOCK_DATA?.toLowerCase() === "true";
 
   if (useMock) {
     const dbPath = process.env.MOCK_DB_PATH ?? "mock.db";
     console.log(`  Target: SQLite (${dbPath})`);
-    return createSqliteAdapter(dbPath);
+    return { db: await createSqliteAdapter(dbPath), isPg: false };
   }
 
   const dbUrl = process.env.DATABASE_URL;
@@ -86,7 +86,7 @@ function getDbAdapter(): Promise<DbAdapter> {
     process.exit(1);
   }
   console.log(`  Target: PostgreSQL (${dbUrl.replace(/\/\/.*@/, "//***@")})`);
-  return createPgAdapter(dbUrl);
+  return { db: await createPgAdapter(dbUrl), isPg: true };
 }
 
 // ── Q360 Schema Scraping (for dynamic table seeding) ─────────────────────────
@@ -170,6 +170,19 @@ function toSQLiteType(datatype: string): "TEXT" | "INTEGER" | "REAL" {
   return "TEXT";
 }
 
+function toPgType(datatype: string): string {
+  const t = datatype.toLowerCase();
+  if (["int", "smallint", "tinyint"].includes(t)) return "INTEGER";
+  if (t === "bigint") return "BIGINT";
+  if (t === "bit") return "BOOLEAN";
+  if (["decimal", "numeric", "money", "smallmoney"].includes(t)) return "NUMERIC";
+  if (["float", "real"].includes(t)) return "DOUBLE PRECISION";
+  if (["datetime", "smalldatetime", "datetime2"].includes(t)) return "TIMESTAMP";
+  if (t === "date") return "DATE";
+  if (t === "time") return "TIME";
+  return "TEXT";
+}
+
 const STATUS_CODES  = ["OPEN", "CLOSED", "PENDING", "IN PROGRESS", "ON HOLD", "CANCELLED"];
 const PROBLEM_TYPES = ["HARDWARE", "SOFTWARE", "NETWORK", "ELECTRICAL", "MECHANICAL", "OTHER"];
 const PRIORITIES    = [1, 2, 3, 4, 5];
@@ -212,12 +225,14 @@ function generateValue(
     if (Math.random() < 0.3) return null;
   }
 
-  // Primary / foreign keys
+  // Primary / foreign keys — respect actual column type
   if (name.endsWith("no") && !name.includes("phone")) {
+    if (sqliteType === "INTEGER") return faker.number.int({ min: 1000, max: 999999 });
     const prefix = tableName.substring(0, 3).toUpperCase();
     return `${prefix}-${faker.string.alphanumeric(8).toUpperCase()}`;
   }
   if (name === "callno" || name === "dispatchno") {
+    if (sqliteType === "INTEGER") return faker.number.int({ min: 1000, max: 999999 });
     return `T${faker.string.numeric(12)}`;
   }
 
@@ -264,25 +279,39 @@ function generateValue(
   if (name.includes("country")) return "US";
   if (name === "zone") return faker.helpers.arrayElement(["NORTH", "SOUTH", "EAST", "WEST", "CENTRAL"]);
 
-  // Dates and times
-  if (name === "date" || name === "opendate" || name === "calldate") {
-    return faker.date.recent({ days: 90 }).toISOString().split("T")[0];
-  }
-  if (name === "closedate") {
-    return Math.random() < 0.4 ? faker.date.recent({ days: 30 }).toISOString().split("T")[0] : null;
-  }
-  if (name.includes("date") || name.includes("time")) {
-    return faker.date.recent({ days: 180 }).toISOString().split("T")[0];
+  // Dates and times — only when the column type is actually a text/date type, not integer
+  if (sqliteType !== "INTEGER" && sqliteType !== "REAL") {
+    if (name === "date" || name === "opendate" || name === "calldate") {
+      return faker.date.recent({ days: 90 }).toISOString().split("T")[0];
+    }
+    if (name === "closedate") {
+      return Math.random() < 0.4 ? faker.date.recent({ days: 30 }).toISOString().split("T")[0] : null;
+    }
+    if (name.includes("date") || name.includes("time")) {
+      return faker.date.recent({ days: 180 }).toISOString().split("T")[0];
+    }
   }
 
   // Financial
   if (name.includes("price") || name.includes("rate") || name.includes("cost") || name.includes("amount")) {
+    if (sqliteType === "INTEGER") return faker.number.int({ min: 50, max: 5000 });
     return faker.number.float({ min: 50, max: 5000, fractionDigits: 2 });
   }
 
   // Boolean flags
   if (sqliteType === "INTEGER" && (name.includes("flag") || name.includes("active") || name.includes("enable"))) {
     return faker.helpers.arrayElement([0, 1]);
+  }
+
+  // Type-based fallback for dates not caught by name heuristics (e.g. LASTEVENT, SCHEDDATE)
+  const rawType = col.type.toLowerCase();
+  if (["datetime", "smalldatetime", "datetime2", "date"].includes(rawType)) {
+    return col.nullable && Math.random() < 0.3
+      ? null
+      : faker.date.recent({ days: 180 }).toISOString().split("T")[0];
+  }
+  if (rawType === "time") {
+    return `${faker.number.int({ min: 0, max: 23 }).toString().padStart(2, "0")}:${faker.number.int({ min: 0, max: 59 }).toString().padStart(2, "0")}:00`;
   }
 
   // Fallback
@@ -379,7 +408,7 @@ async function seedStoryData(db: DbAdapter) {
 
 // ── Seed: Dynamic Table (schema-scraped from Q360) ───────────────────────────
 
-async function seedDynamicTable(db: DbAdapter, rawTableName: string, requestedCount: number) {
+async function seedDynamicTable(db: DbAdapter, rawTableName: string, requestedCount: number, isPg = false) {
   const tableName = normalizeTableName(rawTableName);
   const count = Number.isFinite(requestedCount) && requestedCount > 0 ? requestedCount : 20;
   // Story-derived pools that profile and fallback generators can both use.
@@ -395,7 +424,8 @@ async function seedDynamicTable(db: DbAdapter, rawTableName: string, requestedCo
   console.log(`  Found ${columns.length} columns: ${columns.map((c) => c.name).join(", ")}\n`);
 
   // Build CREATE TABLE
-  const colDefs = columns.map(c => `"${c.name}" ${toSQLiteType(c.type)}`).join(",\n    ");
+  const mapType = isPg ? toPgType : toSQLiteType;
+  const colDefs = columns.map(c => `"${c.name}" ${mapType(c.type)}`).join(",\n    ");
   await db.exec(`DROP TABLE IF EXISTS "${tableName}"`);
   await db.exec(`CREATE TABLE "${tableName}" (\n    ${colDefs}\n  )`);
   console.log(`  Created table "${tableName}"`);
@@ -464,7 +494,7 @@ async function main() {
   }
 
   console.log();
-  const db = await getDbAdapter();
+  const { db, isPg } = await getDbAdapter();
 
   if (!arg1) {
     // Default: seed story data
@@ -500,7 +530,7 @@ async function main() {
     console.log("\n" + validationResult.formatReport());
   } else {
     // Dynamic: schema-scrape and seed a specific table
-    await seedDynamicTable(db, arg1, arg2);
+    await seedDynamicTable(db, arg1, arg2, isPg);
   }
 
   await db.close();
