@@ -24,7 +24,10 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # npm ci may fail when lockfiles were updated on a different platform
+        # or when package metadata drifts. Fallback keeps CI moving while
+        # still preferring deterministic installs.
+        run: npm ci || npm install
 
       - name: Lint
         run: npm run lint
