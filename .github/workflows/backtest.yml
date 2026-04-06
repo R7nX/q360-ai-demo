@@ -1,0 +1,36 @@
+name: Backtest Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: backtest-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Run Vitest Backtest Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        # Keep parity with existing CI lockfile fallback behavior.
+        run: npm ci || npm install
+
+      - name: Run tests
+        run: npm run test
+        env:
+          Q360_BASE_URL: https://example.com
+          Q360_API_USERNAME: ci
+          Q360_API_PASSWORD: ci
+          GEMINI_API_KEY: ci-placeholder
+          USE_MOCK_DATA: "true"
+          DATABASE_URL: ./mock.db
