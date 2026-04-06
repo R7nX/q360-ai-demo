@@ -17,6 +17,20 @@ function hasTable(db: Database.Database, table: string): boolean {
   return !!row;
 }
 
+function getTableColumns(
+  db: Database.Database,
+  table: string
+): Set<string> {
+  const columns = db
+    .prepare(`PRAGMA table_info(${table})`)
+    .all() as Array<{ name?: string }>;
+  return new Set(
+    columns
+      .map((column) => (column.name ?? "").toLowerCase())
+      .filter((name) => name.length > 0)
+  );
+}
+
 export function hasMockDbTable(table: string): boolean {
   const db = getDb();
   if (!db) return false;
@@ -34,21 +48,24 @@ export function getPreferredTechnicianFromMockDb(): string | null {
 
   try {
     if (!hasTable(db, "dispatch")) return null;
+    const dispatchColumns = getTableColumns(db, "dispatch");
+    const hasTechAssignedColumn = dispatchColumns.has("techassigned");
+    if (!hasTechAssignedColumn) return null;
 
     const row = db
       .prepare(
         `
-          SELECT TECHASSIGNED
+          SELECT techassigned AS technician
           FROM dispatch
-          WHERE TECHASSIGNED IS NOT NULL AND TECHASSIGNED != ''
-          GROUP BY TECHASSIGNED
-          ORDER BY COUNT(*) DESC, TECHASSIGNED ASC
+          WHERE techassigned IS NOT NULL AND techassigned != ''
+          GROUP BY techassigned
+          ORDER BY COUNT(*) DESC, techassigned ASC
           LIMIT 1
         `
       )
-      .get() as { TECHASSIGNED?: string } | undefined;
+      .get() as { technician?: string } | undefined;
 
-    return row?.TECHASSIGNED ?? null;
+    return row?.technician ?? null;
   } finally {
     db.close();
   }
@@ -60,9 +77,14 @@ export function getDispatchesFromMockDb(): Dispatch[] | null {
 
   try {
     if (!hasTable(db, "dispatch")) return null;
-    const rows = db
-      .prepare("SELECT * FROM dispatch ORDER BY date DESC LIMIT 50")
-      .all() as Record<string, unknown>[];
+    const dispatchColumns = getTableColumns(db, "dispatch");
+    const sortColumn = ["date", "opendate", "calldate"].find((column) =>
+      dispatchColumns.has(column)
+    );
+    const query = sortColumn
+      ? `SELECT * FROM dispatch ORDER BY ${sortColumn} DESC LIMIT 50`
+      : "SELECT * FROM dispatch LIMIT 50";
+    const rows = db.prepare(query).all() as Record<string, unknown>[];
     return rows.map(normalizeDispatch);
   } finally {
     db.close();

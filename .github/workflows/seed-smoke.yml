@@ -1,0 +1,135 @@
+name: Seed Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily smoke check at 09:00 UTC.
+    - cron: "0 9 * * *"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/seed*.ts"
+      - "scripts/seed-*.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/seed-smoke.yml"
+
+concurrency:
+  group: seed-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  seed-smoke:
+    name: Seed Smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        # Keep install behavior aligned with CI to tolerate lockfile drift.
+        run: npm ci || npm install
+
+      - name: Seed dispatch table with mocked DataDict API
+        shell: bash
+        run: |
+          node <<'NODE' &
+          const http = require("node:http");
+
+          const PORT = 4010;
+          const TABLE_COLUMNS = [
+            { field_name: "dispatchno", sqltype: "varchar", mandatoryflag: "Y" },
+            { field_name: "customerno", sqltype: "varchar", mandatoryflag: "Y" },
+            { field_name: "siteno", sqltype: "varchar", mandatoryflag: "Y" },
+            { field_name: "statuscode", sqltype: "varchar", mandatoryflag: "N" },
+            { field_name: "problemtype", sqltype: "varchar", mandatoryflag: "N" },
+            { field_name: "priority", sqltype: "int", mandatoryflag: "N" },
+            { field_name: "calldate", sqltype: "date", mandatoryflag: "N" }
+          ];
+
+          const server = http.createServer((req, res) => {
+            const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
+            if (url.pathname !== "/api/DataDict") {
+              res.writeHead(404, { "content-type": "application/json" });
+              res.end(JSON.stringify({ payload: { result: [] } }));
+              return;
+            }
+
+            const action = url.searchParams.get("_a");
+            if (action === "list" && url.searchParams.get("tablename")?.toLowerCase() === "dispatch") {
+              res.writeHead(200, { "content-type": "application/json" });
+              res.end(JSON.stringify({ payload: { result: TABLE_COLUMNS } }));
+              return;
+            }
+
+            if (action === "tableList") {
+              res.writeHead(200, { "content-type": "application/json" });
+              res.end(JSON.stringify({ payload: { result: [{ table_dbf: "dispatch" }] } }));
+              return;
+            }
+
+            res.writeHead(404, { "content-type": "application/json" });
+            res.end(JSON.stringify({ payload: { result: [] } }));
+          });
+
+          server.listen(PORT, "127.0.0.1", () => {
+            console.log(`Mock DataDict server listening on ${PORT}`);
+          });
+
+          process.on("SIGTERM", () => server.close(() => process.exit(0)));
+          setInterval(() => {}, 1000);
+          NODE
+
+          MOCK_SERVER_PID=$!
+          trap 'kill "$MOCK_SERVER_PID"' EXIT
+
+          export Q360_BASE_URL="http://127.0.0.1:4010"
+          export Q360_API_USERNAME="ci"
+          export Q360_API_PASSWORD="ci"
+
+          READY=0
+          for attempt in {1..30}; do
+            if ! kill -0 "$MOCK_SERVER_PID" 2>/dev/null; then
+              echo "Mock DataDict server exited before becoming ready."
+              exit 1
+            fi
+
+            if curl -fsS "${Q360_BASE_URL}/api/DataDict?_a=tableList" >/dev/null; then
+              READY=1
+              echo "Mock DataDict server is ready (attempt ${attempt})."
+              break
+            fi
+
+            sleep 1
+          done
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Timed out waiting for mock DataDict server readiness."
+            exit 1
+          fi
+
+          rm -f mock.db
+          npm run seed -- dispatch 5
+
+          node <<'NODE'
+          const Database = require("better-sqlite3");
+          const db = new Database("mock.db", { readonly: true });
+          const result = db.prepare("SELECT COUNT(*) AS row_count FROM dispatch").get();
+          db.close();
+
+          if (!result || result.row_count < 5) {
+            throw new Error(`Expected at least 5 rows in dispatch, got ${result?.row_count ?? 0}`);
+          }
+
+          console.log(`dispatch_rows=${result.row_count}`);
+          NODE
+
+      - name: Run seed validator when available
+        run: npm run seed:validate --if-present
