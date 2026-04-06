@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "generatedBy": "q360-ai-demo",
+  "profile": "selective",
+  "projectName": "Q360 AI Demo",
+  "projectScope": "Internship team demo for field service management AI integration",
+  "sharedSkills": [
+    ".claude/skills/q360-patterns.md",
+    ".claude/skills/tdd-workflow/SKILL.md"
+  ],
+  "agents": [
+    ".claude/agents/code-reviewer.md",
+    ".claude/agents/typescript-reviewer.md"
+  ],
+  "teams": {
+    "feature-1": {
+      "name": "Feature 1: Command Center",
+      "owner": "Team 1",
+      "paths": ["app/(manager)/**", "components/manager/**"],
+      "scope": "Intelligent dashboard with AI-driven dispatch prioritization"
+    },
+    "feature-2": {
+      "name": "Feature 2: Utility Suite",
+      "owner": "Team 2 (Lead)",
+      "paths": ["app/api/ai/**", "components/ai/**"],
+      "scope": "Automated drafting and high-frequency task automation"
+    },
+    "feature-3": {
+      "name": "Feature 3: Workflow Architect",
+      "owner": "Team 3",
+      "paths": ["app/(employee)/**", "components/employee/**"],
+      "scope": "Dynamic workflow recommendations and task suggestions"
+    }
+  },
+  "sharedOwnership": {
+    "paths": [
+      "lib/q360.ts",
+      "lib/ai.ts",
+      "lib/types.ts",
+      "lib/constants.ts",
+      "app/api/q360/**",
+      "components/ui/**",
+      ".github/**"
+    ],
+    "owner": "Team Lead",
+    "coordination": "Slack #dev-coordination"
+  },
+  "demoDeadline": "2026-04-30",
+  "updatedAt": "2026-04-06T00:00:00Z"
+}
