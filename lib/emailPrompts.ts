@@ -1,3 +1,6 @@
+/**
+ * System/user prompt builders for Feature 2 automations and shared tone instructions.
+ */
 import type { ToneOption } from "@/types/feature2";
 
 const TONE_INSTRUCTIONS: Record<ToneOption, string> = {

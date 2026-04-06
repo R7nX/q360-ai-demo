@@ -1,3 +1,6 @@
+/**
+ * GET /api/feature2/records — lists dispatch records shaped for the Feature 2 record picker UI.
+ */
 import { NextResponse } from "next/server";
 import {
   FALLBACK_DISPATCHES,

@@ -1,3 +1,6 @@
+/**
+ * 404 page for routes under the employee app segment.
+ */
 import Link from "next/link";
 
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";

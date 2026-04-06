@@ -1,3 +1,6 @@
+/**
+ * Tests for `POST /api/feature2/overdue` batch analysis and empty-state responses.
+ */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Dispatch } from "@/types/q360";
 

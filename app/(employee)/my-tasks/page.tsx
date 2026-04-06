@@ -1,3 +1,6 @@
+/**
+ * Employee tasks page backed by mock/API task data for the signed-in demo user.
+ */
 import { TaskList } from "@/components/ai/employee/TaskList";
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";
 import {

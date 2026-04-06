@@ -1,10 +1,10 @@
-# Feature 2 Plan — Automated Utility Suite
+# Feature 2 Plan - Automated Utility Suite
 
 > **Owner:** Team 2  
 > **Branch:** `feature/2-utility-suite`  
 > **Deadline:** End of April 2026  
 > **Last updated:** 2026-04-05  
-> **Status:** Phase 1 mostly complete; Phase 2 shared-tool expansion pending
+> **Status:** Core Feature 2 scope complete; polish and handoff validation in progress
 
 ---
 
@@ -12,13 +12,11 @@
 
 Feature 2 delivers reusable AI utilities plus a standalone demo experience:
 
-- `/feature2` — AI email drafting from Q360 dispatch context
-- `/feature2/overdue` — AI overdue dispatch analysis dashboard
+- `/feature2` - AI email drafting from Q360 dispatch context
+- `/feature2/overdue` - AI overdue dispatch analysis dashboard
 - Shared abstractions for Teams 1 and 3 under `/api/ai/*` and `components/ai/*`
 
-This file is the single source of truth for Feature 2 planning and status,
-based on the prior split docs and a full repository implementation audit
-(2026-04-05).
+This file is the current source of truth for Feature 2 status and remaining handoff work.
 
 ---
 
@@ -30,28 +28,36 @@ based on the prior split docs and a full repository implementation audit
 - `/feature2/overdue` page is built and wired to `/api/feature2/overdue`.
 - Overdue UI components are built: `AlertCard`, `StatsSummaryBar`.
 - Shared draft route exists: `/api/ai/draft-email`.
-- Shared draft component exists: `components/ai/EmailDrafter.tsx`.
-- Test suite passes (`npm test`: 87/87).
-- Production build passes (`npm run build`).
+- `/api/feature2/generate` now uses shared draft logic (thin wrapper behavior).
+- Shared resolver exists: `lib/entityResolver.ts` (dispatch-first support).
+- Optional JSON mode is supported on `/api/ai/draft-email?format=json`.
+- Shared tool routes are implemented:
+  - `/api/ai/summarize`
+  - `/api/ai/recommend`
+  - `/api/ai/status-report`
+  - `/api/ai/smart-reply`
+- Shared components are implemented:
+  - `components/ai/EmailDrafter.tsx`
+  - `components/ai/DataSummary.tsx`
+  - `components/ai/ActionRecommender.tsx`
+  - `components/ai/StatusReport.tsx`
+  - `components/ai/SmartReply.tsx`
+- Shared component gallery/harness is mounted on `/feature2`.
+- Verification passed:
+  - `npm test` (108 tests)
+  - `npm run lint`
+  - `npm run build`
 
-### Pending
+### Remaining / Follow-up
 
-- `/api/ai/summarize`
-- `/api/ai/recommend`
-- `/api/ai/status-report`
-- `/api/ai/smart-reply`
-- `components/ai/DataSummary.tsx`
-- `components/ai/ActionRecommender.tsx`
-- `components/ai/StatusReport.tsx`
-- `components/ai/SmartReply.tsx`
+- Broaden `lib/entityResolver.ts` beyond dispatch when non-dispatch entity integrations are needed.
+- Add dedicated tests for new shared components (`DataSummary`, `ActionRecommender`, `StatusReport`, `SmartReply`).
+- Validate each shared tool with at least 3 real sandbox entity IDs before final demo handoff.
 
-### Partial / Drift From Original Plan
+### Known Drift From Older Plan Text
 
-- Planned shared resolver `lib/entityResolver.ts` is not implemented.
-- `/api/feature2/generate` is not a thin wrapper yet; route logic is duplicated with `/api/ai/draft-email`.
-- `/api/ai/draft-email` currently supports `entityType: "dispatch"` only.
-- Planned `?format=json` mode on `/api/ai/draft-email` is not implemented.
-- Overdue API currently caps analyzed records at `15` (plan text said `50`).
+- `/api/ai/draft-email` accepts the broader request shape, but data resolution is still dispatch-first.
+- Overdue API continues to cap analyzed records at `15` (older planning text mentioned `50`).
 
 ---
 
@@ -72,53 +78,62 @@ based on the prior split docs and a full repository implementation audit
 ### Phase 3 (polish)
 
 1. Stronger loading/error/empty states across all shared tools
-2. Feature 2 page component gallery for handoff demos
-3. Deployment + rehearsal
+2. Handoff validation with real sandbox IDs
+3. Deployment rehearsal
 
 ---
 
 ## 4. Implementation Matrix
 
-### Layer A — Standalone Demo (`/feature2`)
+### Layer A - Standalone Demo (`/feature2`)
 
 | Item | Status |
 |---|---|
-| `/feature2` | ✅ Built |
-| `/feature2/overdue` | ✅ Built |
-| `app/feature2/components/RecordSelector.tsx` | ✅ Built |
-| `app/feature2/components/AutomationTypeCard.tsx` | ✅ Built |
-| `app/feature2/components/ToneSelector.tsx` | ✅ Built |
-| `app/feature2/components/EmailPreviewPanel.tsx` | ✅ Built |
-| `app/feature2/components/AlertCard.tsx` | ✅ Built |
-| `app/feature2/components/StatsSummaryBar.tsx` | ✅ Built |
+| `/feature2` | Complete |
+| `/feature2/overdue` | Complete |
+| `app/feature2/components/RecordSelector.tsx` | Complete |
+| `app/feature2/components/AutomationTypeCard.tsx` | Complete |
+| `app/feature2/components/ToneSelector.tsx` | Complete |
+| `app/feature2/components/EmailPreviewPanel.tsx` | Complete |
+| `app/feature2/components/AlertCard.tsx` | Complete |
+| `app/feature2/components/StatsSummaryBar.tsx` | Complete |
 
-### Layer B — Shared Abstractions (`/api/ai/*`, `components/ai/*`)
+### Layer B - Shared Abstractions (`/api/ai/*`, `components/ai/*`)
 
 | Tool | API | Component | Status |
 |---|---|---|---|
-| Email Drafter | `/api/ai/draft-email` | `EmailDrafter.tsx` | ✅ Built (v1) |
-| Data Summarizer | `/api/ai/summarize` | `DataSummary.tsx` | ❌ Pending |
-| Action Recommender | `/api/ai/recommend` | `ActionRecommender.tsx` | ❌ Pending |
-| Status Report | `/api/ai/status-report` | `StatusReport.tsx` | ❌ Pending |
-| Smart Reply | `/api/ai/smart-reply` | `SmartReply.tsx` | ❌ Pending |
+| Email Drafter | `/api/ai/draft-email` | `EmailDrafter.tsx` | Complete |
+| Data Summarizer | `/api/ai/summarize` | `DataSummary.tsx` | Complete |
+| Action Recommender | `/api/ai/recommend` | `ActionRecommender.tsx` | Complete |
+| Status Report | `/api/ai/status-report` | `StatusReport.tsx` | Complete |
+| Smart Reply | `/api/ai/smart-reply` | `SmartReply.tsx` | Complete |
 
 ---
 
-## 5. Current Architecture (Implemented)
+## 5. Current Architecture
 
 ### Feature-specific routes
 
 - `POST /api/feature2/generate`  
-  Streaming email generation for Feature 2 page.
+  Legacy Feature 2 request shape; now delegates to shared draft service.
 - `POST /api/feature2/overdue`  
   Non-streaming overdue batch analysis.
 - `GET /api/feature2/records`  
   Dispatch list for selector UI.
 
-### Shared route
+### Shared routes
 
-- `POST /api/ai/draft-email`  
-  Shared draft route for teams; currently dispatch-only.
+- `POST /api/ai/draft-email`
+- `POST /api/ai/summarize`
+- `POST /api/ai/recommend`
+- `POST /api/ai/status-report`
+- `POST /api/ai/smart-reply`
+
+### Shared service layer
+
+- `lib/entityResolver.ts` - entity fetch + prompt formatting (dispatch-first)
+- `lib/draftEmailService.ts` - shared draft generation and normalization logic
+- `lib/aiToolsService.ts` - summarize/recommend/status/smart-reply generation logic
 
 ### AI client and prompts
 
@@ -130,47 +145,29 @@ based on the prior split docs and a full repository implementation audit
   - `new-call-ack`
   - overdue batch JSON analysis
 
-### Data sources
-
-- Mock data path: SQLite/Postgres via `lib/mockDb.ts` (based on `USE_MOCK_DATA` + `DATABASE_URL`)
-- Hard fallback constants in `lib/q360Client.ts`
-
 ---
 
 ## 6. API Contract
 
-### 6.1 Current v1 contract (`/api/ai/draft-email`)
+### 6.1 `/api/ai/draft-email` (implemented behavior)
 
-Request (implemented):
+Request:
 
 ```ts
 {
-  entityType?: "dispatch", // only dispatch currently accepted
+  entityType?: "dispatch" | "project" | "customer" | "servicecontract" | "timebill",
   entityId: string,
   intent: "project-status" | "service-closure" | "overdue-alert" | "new-call-ack",
-  audience?: "customer" | "internal" | "manager" | "technician",
-  tone?: "professional" | "friendly" | "concise"
-}
-```
-
-Response (implemented):
-
-- Streaming plain text (`SUBJECT: ...` + body), not JSON envelope.
-
-### 6.2 Target contract (planned for full shared layer)
-
-```ts
-{
-  entityType: "dispatch" | "project" | "customer" | "servicecontract" | "timebill",
-  entityId: string,
-  intent: string,
   context?: Record<string, unknown>,
-  audience?: "manager" | "customer" | "technician" | "internal",
-  tone?: "formal" | "friendly" | "urgent"
+  audience?: "customer" | "internal" | "manager" | "technician",
+  tone?: "professional" | "friendly" | "concise" | "formal" | "urgent"
 }
 ```
 
-Planned JSON response:
+Response modes:
+
+- Default: streaming plain text (`SUBJECT: ...` + body)
+- Optional: `?format=json` returns:
 
 ```ts
 {
@@ -178,19 +175,34 @@ Planned JSON response:
   result: {
     content: string,
     subject?: string,
-    actions?: string[],
     metadata: {
       model: string,
       entityType: string,
       entityId: string
     }
-  }
+  } | null,
+  message?: string
 }
 ```
 
+### 6.2 Shared tools contract (`/api/ai/summarize|recommend|status-report|smart-reply`)
+
+```ts
+{
+  entityType: "dispatch" | "project" | "customer" | "servicecontract" | "timebill",
+  entityId: string,
+  intent?: string,
+  context?: Record<string, unknown>,
+  audience?: "manager" | "customer" | "technician" | "internal",
+  tone?: "professional" | "friendly" | "concise"
+}
+```
+
+`/api/ai/recommend` may include `result.actions[]`, and `/api/ai/smart-reply` requires an inbound message in either `inboundMessage` or `context.inboundMessage`.
+
 ---
 
-## 7. Overdue Alert Rules (Canonical)
+## 7. Overdue Alert Rules
 
 ### Urgency tiers
 
@@ -211,44 +223,49 @@ Planned JSON response:
 ## 8. Verification Snapshot (2026-04-05)
 
 - `npm test`  
-  Result: pass (`5` test files, `87` tests).
+  Result: pass (`8` test files, `108` tests).
+- `npm run lint`  
+  Result: pass.
 - `npm run build`  
   Result: pass.
-- Existing coverage includes:
-  - prompt generation
-  - streaming/JSON AI client behavior
-  - `computeDaysOverdue`
-  - Feature 2 page/selector behavior
 
-Gap:
+Coverage highlights:
 
-- No dedicated tests yet for `components/ai/EmailDrafter.tsx`.
+- Prompt generation
+- Streaming and JSON AI client behavior
+- `computeDaysOverdue`
+- Feature 2 page and selector behavior
+- Draft-email and Feature 2 generation route behavior
+
+Known test gap:
+
+- No dedicated tests yet for new shared UI components beyond existing page-level coverage.
 
 ---
 
 ## 9. Remaining Work Checklist
 
-## 9.1 Must finish for complete plan parity
+### 9.1 Plan parity
 
-- [ ] Implement `lib/entityResolver.ts` and remove route duplication.
-- [ ] Convert `/api/feature2/generate` into thin wrapper over shared logic.
-- [ ] Align intent/tone naming with final abstract contract or document final decision.
-- [ ] Implement optional JSON mode for `/api/ai/draft-email` if required by integrations.
+- [x] Implement `lib/entityResolver.ts` and remove route duplication.
+- [x] Convert `/api/feature2/generate` into thin wrapper over shared logic.
+- [x] Align intent/tone naming with abstract contract (documented aliases and supported values).
+- [x] Implement optional JSON mode for `/api/ai/draft-email`.
 
-## 9.2 Phase 2 shared tools
+### 9.2 Phase 2 shared tools
 
-- [ ] `app/api/ai/summarize/route.ts`
-- [ ] `app/api/ai/recommend/route.ts`
-- [ ] `app/api/ai/status-report/route.ts`
-- [ ] `app/api/ai/smart-reply/route.ts`
-- [ ] `components/ai/DataSummary.tsx`
-- [ ] `components/ai/ActionRecommender.tsx`
-- [ ] `components/ai/StatusReport.tsx`
-- [ ] `components/ai/SmartReply.tsx`
+- [x] `app/api/ai/summarize/route.ts`
+- [x] `app/api/ai/recommend/route.ts`
+- [x] `app/api/ai/status-report/route.ts`
+- [x] `app/api/ai/smart-reply/route.ts`
+- [x] `components/ai/DataSummary.tsx`
+- [x] `components/ai/ActionRecommender.tsx`
+- [x] `components/ai/StatusReport.tsx`
+- [x] `components/ai/SmartReply.tsx`
 
-## 9.3 Handoff readiness
+### 9.3 Handoff readiness
 
-- [ ] Mount shared components on `/feature2` as gallery/harness.
+- [x] Mount shared components on `/feature2` as gallery/harness.
 - [x] Props documented via TypeScript.
 - [x] Loading/error/empty states in `EmailDrafter`.
 - [ ] Verify with at least 3 real entity IDs per shared component.
@@ -257,8 +274,9 @@ Gap:
 
 ## 10. Notes for Teams 1 and 3
 
-Current safe integration path:
+Current integration guidance:
 
-- Use `components/ai/EmailDrafter.tsx` for draft-email use cases.
-- Assume streaming response behavior from `/api/ai/draft-email`.
-- Coordinate before depending on unbuilt endpoints (`summarize`, `recommend`, `status-report`, `smart-reply`).
+- `components/ai/EmailDrafter.tsx` is stable for draft-email flows.
+- Shared tool components now exist for summarize/recommend/status-report/smart-reply.
+- `/api/ai/draft-email` supports streaming by default and JSON mode via `?format=json`.
+- If consuming non-dispatch entity types, coordinate first because resolver support is still dispatch-first.

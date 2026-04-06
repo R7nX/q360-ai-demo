@@ -1,3 +1,6 @@
+/**
+ * Compact dispatch row/card linking to detail and showing customer, site, and status.
+ */
 import Link from "next/link";
 
 type DispatchCardProps = {

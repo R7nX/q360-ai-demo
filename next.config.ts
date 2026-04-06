@@ -1,3 +1,6 @@
+/**
+ * Next.js config: dev LAN origin allowlist for testing from other devices on the network.
+ */
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

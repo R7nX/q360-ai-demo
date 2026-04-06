@@ -1,3 +1,6 @@
+/**
+ * Renders a week grid of schedule entries plus summary chips (stops, travel, holds).
+ */
 import type { ScheduleEntry } from "@/lib/employeeHome";
 
 type ScheduleViewProps = {
