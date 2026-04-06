@@ -4,6 +4,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import ActionRecommender from "@/components/ai/ActionRecommender";
+import SmartReply from "@/components/ai/SmartReply";
 import { EmployeeEmailAssistant } from "@/components/ai/employee/EmployeeEmailAssistant";
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";
 import {
@@ -215,23 +217,43 @@ export default async function DispatchDetailPage({
                 </div>
               </section>
 
-              <section className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 shadow-sm">
+              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-                  Team 2 AI Integration Slot
+                  Team 2 AI Tools
                 </p>
                 <h3 className="mt-2 text-lg font-semibold text-slate-900">
-                  Smart Reply is still pending
+                  Dispatch communication and next-step guidance
                 </h3>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
-                  The current workspace exposes Team 2 email generation, but it
-                  does not yet expose a shared Smart Reply surface for Part 3 to
-                  consume safely.
+                  These shared Team 2 tools use the current dispatch context to
+                  draft replies and suggest actionable follow-up steps.
                 </p>
-                <div className="mt-4 grid gap-3">
-                  <div className="rounded-2xl border border-white bg-white px-4 py-3 text-sm text-slate-600">
-                    Smart Reply remains blocked until a confirmed shared Team 2
-                    route or component is available in this repo.
-                  </div>
+                <div className="mt-4 grid gap-4">
+                  <SmartReply
+                    entityType="dispatch"
+                    entityId={detail.dispatchno}
+                    audience="internal"
+                    tone="friendly"
+                    context={{
+                      customerName: detail.customerName,
+                      siteName: detail.siteName,
+                      status: detail.status,
+                      priority: detail.priority,
+                    }}
+                  />
+                  <ActionRecommender
+                    entityType="dispatch"
+                    entityId={detail.dispatchno}
+                    audience="technician"
+                    tone="professional"
+                    context={{
+                      customerName: detail.customerName,
+                      siteName: detail.siteName,
+                      status: detail.status,
+                      priority: detail.priority,
+                      problem: detail.problem,
+                    }}
+                  />
                 </div>
               </section>
 
