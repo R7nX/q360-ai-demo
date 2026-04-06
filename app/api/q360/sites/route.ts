@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/sites — Q360 sites/locations with optional query filters.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getSites } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";

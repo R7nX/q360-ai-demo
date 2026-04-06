@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/customers — Q360 customers with optional query filters.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getCustomers } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";

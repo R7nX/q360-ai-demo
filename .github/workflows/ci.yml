@@ -24,9 +24,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        # npm ci may fail when lockfiles were updated on a different platform
-        # or when package metadata drifts. Fallback keeps CI moving while
-        # still preferring deterministic installs.
+        # npm ci may fail when package-lock.json was generated on a
+        # different OS (Windows/macOS) and is missing platform-specific
+        # optional dependencies for Linux.  Falling back to npm install
+        # resolves native binaries for the current platform while still
+        # respecting the lock file versions.
         run: npm ci || npm install
 
       - name: Lint

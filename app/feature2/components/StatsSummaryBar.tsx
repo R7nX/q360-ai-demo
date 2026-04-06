@@ -1,3 +1,6 @@
+/**
+ * Three-column summary strip for the overdue scanner (scanned / overdue / critical counts).
+ */
 import type { OverdueSummary } from "@/types/feature2";
 
 interface Props {

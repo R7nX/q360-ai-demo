@@ -1,3 +1,6 @@
+/**
+ * Data loaders and shapes for employee demo pages (home, dispatches, tasks, schedule, time).
+ */
 import {
   FALLBACK_CUSTOMERS,
   FALLBACK_DISPATCHES,
@@ -24,7 +27,10 @@ const HAS_MOCK_DISPATCHES = hasMockDbTable("dispatch");
 const HAS_MOCK_CUSTOMERS = hasMockDbTable("customer");
 const HAS_MOCK_SITES = hasMockDbTable("site");
 const HAS_MOCK_TIME_BILLS = hasMockDbTable("timebill");
-const HAS_MOCK_TASKS = hasMockDbTable("TASKS") || hasMockDbTable("tasks");
+const HAS_MOCK_TASKS =
+  hasMockDbTable("TASKS") ||
+  hasMockDbTable("tasks") ||
+  hasMockDbTable("task");
 
 export const CURRENT_EMPLOYEE =
   process.env.NEXT_PUBLIC_EMPLOYEE_NAME ??

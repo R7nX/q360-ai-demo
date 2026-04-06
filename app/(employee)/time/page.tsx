@@ -1,3 +1,6 @@
+/**
+ * Time entry and recent time bill summary for the demo employee.
+ */
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";
 import { TimeEntry } from "@/components/ai/employee/TimeEntry";
 import {

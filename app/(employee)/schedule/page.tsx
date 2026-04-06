@@ -1,3 +1,6 @@
+/**
+ * Week-style schedule view for the demo employee.
+ */
 import { EmployeeHeader } from "@/components/ai/employee/EmployeeHeader";
 import { ScheduleView } from "@/components/ai/employee/ScheduleView";
 import {

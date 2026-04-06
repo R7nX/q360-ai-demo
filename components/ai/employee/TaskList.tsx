@@ -1,3 +1,6 @@
+/**
+ * Read-only task list with priority styling for the employee tasks page.
+ */
 import type { EmployeeTask } from "@/lib/employeeHome";
 
 type TaskListProps = {

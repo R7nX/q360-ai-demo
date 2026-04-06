@@ -1,5 +1,8 @@
+/**
+ * Unit tests for `computeDaysOverdue` edge cases (missing dates, ESTFIXTIME, 7-day fallback).
+ */
 import { describe, it, expect } from "vitest";
-import { computeDaysOverdue } from "@/app/api/feature2/overdue/route";
+import { computeDaysOverdue } from "@/lib/computeDaysOverdue";
 import type { Dispatch } from "@/types/q360";
 
 // Base dispatch with no date fields set

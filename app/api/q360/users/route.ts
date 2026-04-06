@@ -1,3 +1,6 @@
+/**
+ * GET /api/q360/users — Q360 users with optional query filters.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getUsers } from "@/lib/q360";
 import type { Q360Filter } from "@/lib/q360";
