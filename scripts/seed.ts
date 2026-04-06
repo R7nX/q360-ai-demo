@@ -16,7 +16,7 @@
  */
 
 import { faker } from "@faker-js/faker";
-import { CUSTOMERS, SITES, DISPATCHES, TIMEBILLS, TASKS, daysAgo } from "./seed-data";
+import { CUSTOMERS, SITES, DISPATCHES, TIMEBILLS, TASKS, TECHNICIANS, daysAgo } from "./seed-data";
 import {
   PROFILE_TABLES,
   SeedContext,
@@ -25,6 +25,8 @@ import {
   createSeedContext,
   normalizeTableName,
 } from "./seed-profiles";
+import { validateSeedData, type SeedTables } from "./seed-validate";
+import { enrichRows, createEnrichmentContext } from "./seed-enrich";
 
 // Load .env.local unless a caller explicitly opts out for isolated testing.
 if (process.env.SEED_SKIP_ENV_FILE?.toLowerCase() !== "true") {
@@ -403,11 +405,29 @@ async function seedDynamicTable(db: DbAdapter, rawTableName: string, requestedCo
   const placeholders = columns.map(() => "?").join(", ");
   const sql = `INSERT INTO "${tableName}" (${colNames}) VALUES (${placeholders})`;
 
-  const profileRows = buildProfileRows(tableName, ctx, count);
+  let profileRows = buildProfileRows(tableName, ctx, count);
   if (profileRows.length > 0) {
     console.log(`  Using meaningful profile generator for "${tableName}"`);
   } else {
     console.log(`  No profile for "${tableName}", using schema-based synthetic fallback`);
+  }
+
+  // Gemini enrichment (optional, for profile-backed tables only)
+  const enrichmentFields: Record<string, string[]> = {
+    DISPATCH: ["PROBLEM", "SOLUTION"],
+    PROJECTTASKHISTORY: ["NOTE"],
+    MACHINE: ["DESCRIPTION"],
+    EMPSCHEDULE: ["TITLE"],
+    PROJECTSCHEDULE: ["TITLE"],
+  };
+  const fieldsToEnrich = enrichmentFields[tableName];
+  if (profileRows.length > 0 && fieldsToEnrich) {
+    const useGemini = process.env.SEED_USE_GEMINI?.toLowerCase() === "true";
+    const enrichCtx = createEnrichmentContext({ enabled: useGemini });
+    if (useGemini) {
+      console.log(`  Enriching ${fieldsToEnrich.join(", ")} via Gemini...`);
+    }
+    profileRows = await enrichRows(tableName, profileRows, fieldsToEnrich, enrichCtx);
   }
 
   for (let i = 0; i < count; i++) {
@@ -449,6 +469,35 @@ async function main() {
   if (!arg1) {
     // Default: seed story data
     await seedStoryData(db);
+
+    // Run validation on the freshly seeded data
+    const now = new Date();
+    const validationTables: SeedTables = {
+      customers: CUSTOMERS.map((c) => ({ ...c })),
+      sites: SITES.map((s) => ({ ...s })),
+      dispatches: DISPATCHES.map((d) => ({
+        dispatchno: d.dispatchno, callno: d.callno, customerno: d.customerno, siteno: d.siteno,
+        statuscode: d.statuscode, problem: d.problem, solution: d.solution, priority: d.priority,
+        techassigned: d.techassigned, date: daysAgo(d.openDaysAgo, now),
+        closedate: d.closeDaysAgo != null ? daysAgo(d.closeDaysAgo, now) : null,
+        estfixtime: daysAgo(d.estFixDaysAgo, now), callername: d.callername,
+        calleremail: d.calleremail, callerphone: d.callerphone, description: d.description,
+      })),
+      timebills: TIMEBILLS.map((tb) => ({
+        timebillno: tb.timebillno, userid: tb.userid, dispatchno: tb.dispatchno,
+        customerno: tb.customerno, date: daysAgo(tb.daysAgo, now), timebilled: tb.timebilled,
+        rate: tb.rate, category: tb.category,
+      })),
+      tasks: TASKS.map((t) => ({
+        taskid: t.taskid, userid: t.userid, title: t.title, priority: t.priority,
+        enddate: daysAgo(-t.endDaysFromNow, now),
+        completeddate: t.completedDaysAgo != null ? daysAgo(t.completedDaysAgo, now) : null,
+        statuscode: t.completedDaysAgo != null ? "CLOSED" : "OPEN",
+      })),
+      knownUsers: TECHNICIANS.map((t) => t.name),
+    };
+    const validationResult = validateSeedData(validationTables);
+    console.log("\n" + validationResult.formatReport());
   } else {
     // Dynamic: schema-scrape and seed a specific table
     await seedDynamicTable(db, arg1, arg2);

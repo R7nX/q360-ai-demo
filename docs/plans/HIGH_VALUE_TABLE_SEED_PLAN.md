@@ -1,7 +1,7 @@
 # High-Value Table Seed Plan
 
 **Date:** 2026-04-05  
-**Status:** Partially implemented as of 2026-04-05
+**Status:** Fully implemented as of 2026-04-05
 **Scope:** Extend `scripts/seed.ts` to generate meaningful data for high-value Q360 tables using a hybrid deterministic + profile-driven approach (Gemini optional, minimal).
 
 ## 1. Goal
@@ -200,17 +200,19 @@ Guardrails:
 3. Implement `PROJECTSCHEDULE`.
 4. Implement `PROJECTTASKHISTORY`.
 
-## Phase 4: Validation + QA
+## Phase 4: Validation + QA (Implemented 2026-04-05)
 
-1. Add per-table validators.
-2. Add summary report with counts and failed rules.
-3. Add smoke test command to seed and validate all high-value tables.
+1. ✅ `scripts/seed-validate.ts` — FK integrity, lifecycle rules, required fields, summary report.
+2. ✅ `npm run seed:validate` — standalone CLI command.
+3. ✅ Validation runs automatically after `npm run seed` (story data mode).
+4. ✅ 21 unit tests + integration test against actual story data.
 
-## Phase 5: Optional Gemini Enrichment
+## Phase 5: Optional Gemini Enrichment (Implemented 2026-04-05)
 
-1. Add toggle + budget controls.
-2. Restrict enrichment to non-key descriptive fields.
-3. Keep deterministic fallback as default behavior.
+1. ✅ `scripts/seed-enrich.ts` — batched enrichment with budget cap (50 calls/run).
+2. ✅ Gated behind `SEED_USE_GEMINI=true` (default off, deterministic fallback).
+3. ✅ Enriches: DISPATCH (PROBLEM/SOLUTION), MACHINE (DESCRIPTION), EMPSCHEDULE (TITLE), PROJECTSCHEDULE (TITLE), PROJECTTASKHISTORY (NOTE).
+4. ✅ 12 unit tests covering flag gating, batching, budget, fallback, edge cases.
 
 ## 10. Validation Checklist
 
@@ -241,11 +243,13 @@ Guardrails:
 3. Unsupported tables gain meaningful, linked records instead of random-only values.
 4. Gemini is optional and not required for normal seeded demo runs.
 
-## 13. Immediate Next Steps
+## 13. Status
 
-1. Extend profile coverage for the remaining high-value tables that still need dedicated generators.
-2. Add or refine validation summary output for the profile-backed seed modes.
-3. Run smoke seeds against the current merged branch and keep the docs aligned with the implemented tables.
+All phases (1–5) are now implemented. The seed system is complete:
+- 12 high-value table profiles
+- Post-seed validation with summary report
+- Optional Gemini enrichment with budget controls
+- 182 tests passing across the full test suite
 
 ## 14. Session Restart Notes
 

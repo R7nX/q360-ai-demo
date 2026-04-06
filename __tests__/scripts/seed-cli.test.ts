@@ -35,11 +35,15 @@ const compiledScriptsDir = path.join(compiledRoot, "scripts");
 const seedScriptPath = path.join(compiledScriptsDir, "seed.js");
 const seedDataPath = path.join(compiledScriptsDir, "seed-data.js");
 const seedProfilesPath = path.join(compiledScriptsDir, "seed-profiles.js");
+const seedValidatePath = path.join(compiledScriptsDir, "seed-validate.js");
+const seedEnrichPath = path.join(compiledScriptsDir, "seed-enrich.js");
 
 beforeAll(() => {
   fs.mkdirSync(compiledScriptsDir, { recursive: true });
   compileSeedScript("seed-data.ts", "seed-data.js");
   compileSeedScript("seed-profiles.ts", "seed-profiles.js");
+  compileSeedScript("seed-validate.ts", "seed-validate.js");
+  compileSeedScript("seed-enrich.ts", "seed-enrich.js");
   compileSeedScript("seed.ts", "seed.js");
 });
 
@@ -163,6 +167,8 @@ function buildWorkerSource() {
       delete require.cache[workerData.seedScriptPath];
       delete require.cache[workerData.seedDataPath];
       delete require.cache[workerData.seedProfilesPath];
+      delete require.cache[workerData.seedValidatePath];
+      delete require.cache[workerData.seedEnrichPath];
       require(workerData.seedScriptPath);
       scheduleDone();
     } catch (err) {
@@ -198,6 +204,8 @@ async function runSeedScript(
       seedScriptPath,
       seedDataPath,
       seedProfilesPath,
+      seedValidatePath,
+      seedEnrichPath,
       quietMs: options.quietMs ?? 100,
     },
   });

@@ -235,6 +235,27 @@ npx tsx scripts/seed.ts customer 15       # Seed customer table with 15 syntheti
 npx tsx scripts/seed.ts invoices 50       # Any Q360 table
 ```
 
+### Validate Seeded Data
+```bash
+npm run seed:validate
+```
+
+Reads the current database and checks FK integrity, lifecycle rules, and required fields. Prints a per-table report with pass/fail status.
+
+### Gemini Enrichment (Optional)
+```bash
+SEED_USE_GEMINI=true npx tsx scripts/seed.ts machine 20
+```
+
+When `SEED_USE_GEMINI=true`, profile-generated rows get their descriptive fields enriched via Gemini API. Enriched tables/fields:
+- DISPATCH: `PROBLEM`, `SOLUTION`
+- MACHINE: `DESCRIPTION`
+- EMPSCHEDULE: `TITLE`
+- PROJECTSCHEDULE: `TITLE`
+- PROJECTTASKHISTORY: `NOTE`
+
+Hard cap: 50 API calls per run. Falls back to deterministic text if Gemini is unavailable or budget exhausted.
+
 ---
 
 ## Testing
@@ -246,6 +267,8 @@ All modes have been tested and verified working:
 3. **List tables:** ✓ Successfully fetches 1633+ table names from Q360 API
 4. **Data quality:** ✓ Verified sample data shows realistic company/site names, contextually appropriate problems, and correct technician assignments
 5. **Caller/description fields:** ✓ Fixed normalizer now correctly populates caller name, phone, and description in dispatch records
+6. **Validation (Phase 4):** ✓ FK integrity, lifecycle rules, required fields, summary report — 21 unit tests + integration test against story data
+7. **Gemini enrichment (Phase 5):** ✓ Flag gating, batching, budget cap, fallback on failure, multi-field enrichment, edge cases — 12 unit tests
 
 ---
 
@@ -286,30 +309,36 @@ All other dispatch columns (statuscode, problem, solution, priority, techassigne
 
 5. **Performance optimization:** For large datasets (1000+ dispatches), could batch-insert rows instead of individual INSERT statements.
 
+6. **Extend Gemini enrichment:** Add more tables or fields to the enrichment pipeline as needed. Current coverage: DISPATCH, MACHINE, EMPSCHEDULE, PROJECTSCHEDULE, PROJECTTASKHISTORY.
+
 ---
 
 ## Key Files Reference
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `scripts/seed.ts` | Unified seed script (story data + dynamic tables) | ~450 |
+| `scripts/seed.ts` | Unified seed script (story data + dynamic tables + validation + enrichment) | ~500 |
 | `scripts/seed-profiles.ts` | High-value table profile generators and seed context | ~300 |
-| `scripts/seed-data.ts` | Hardcoded story content | ~400 |
+| `scripts/seed-data.ts` | Hardcoded story content | ~660 |
+| `scripts/seed-validate.ts` | FK integrity, lifecycle, and required-field validation + CLI | ~210 |
+| `scripts/seed-enrich.ts` | Optional Gemini-powered text enrichment with batching and budget cap | ~130 |
 | `lib/mockDb.ts` | Mock DB reader (fixed normalizer) | 1 function changed |
 | `lib/q360Client.ts` | Q360 API wrapper (updated fallback data) | 3 constants updated |
-| `package.json` | npm scripts | 3 scripts updated |
+| `package.json` | npm scripts | 4 scripts updated |
 
 ---
 
 ## Notes for Continuation
 
-- **seed.ts is self-contained:** It imports seed-data.ts and handles all DB logic internally. No external dependencies beyond `better-sqlite3`, `pg`, and `@faker-js/faker`.
-- **Profile extension split:** High-value table profile generators now live in `scripts/seed-profiles.ts`, while `seed.ts` orchestrates mode selection, schema fetch, and fallback behavior.
+- **seed.ts is self-contained:** It imports seed-data.ts, seed-profiles.ts, seed-validate.ts, and seed-enrich.ts. No external dependencies beyond `better-sqlite3`, `pg`, `@faker-js/faker`, and optionally `@google/genai`.
+- **Profile extension split:** High-value table profile generators now live in `scripts/seed-profiles.ts`, while `seed.ts` orchestrates mode selection, schema fetch, enrichment, and fallback behavior.
+- **Validation runs automatically:** After seeding story data, `seed.ts` runs FK + lifecycle validation and prints a report. Also available standalone via `npm run seed:validate`.
+- **Gemini enrichment is opt-in:** Set `SEED_USE_GEMINI=true` to enrich profile-generated descriptions via Gemini API. Default off. Hard cap of 50 calls per run. Falls back gracefully on any failure.
 - **Merge update (2026-04-05):** `feature3` has now been merged into `chore/seed-data-refinement`, so this branch already includes the task-table naming fix and CI/lint cleanup that were missing from old `main`.
 
 - **Future PR work:** The current branch has the complete implementation. When merging to main, verify:
   1. No linting errors on the merged branch
   2. Both SQLite and PostgreSQL modes work in CI
-  3. npm scripts (`npm run seed`, `npm run tables`, `npm run seed:profiles`) are aliased correctly
+  3. npm scripts (`npm run seed`, `npm run tables`, `npm run seed:profiles`, `npm run seed:validate`) are aliased correctly
 
 - **Demo readiness:** The seeded data is production-ready for the end-of-April 2026 demo. All 50 dispatches tell coherent stories; AI email generation will produce convincing outputs; overdue dashboard will show realistic tiering.

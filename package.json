@@ -10,6 +10,7 @@
     "seed": "tsx scripts/seed.ts",
     "tables": "tsx scripts/seed.ts list",
     "seed:profiles": "tsx scripts/seed.ts profiles",
+    "seed:validate": "tsx scripts/seed-validate.ts",
     "migrate": "tsx scripts/migrate-to-postgres.ts",
     "test": "vitest run",
     "test:watch": "vitest",
