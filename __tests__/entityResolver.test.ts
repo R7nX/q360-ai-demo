@@ -135,7 +135,9 @@ beforeEach(() => {
 
 describe("entityResolver.resolveEntity", () => {
   it("throws UnsupportedEntityTypeError for non-dispatch types", async () => {
-    await expect(resolveEntity("project", "P-1")).rejects.toBeInstanceOf(
+    const unsupportedType = "project" as unknown as Parameters<typeof resolveEntity>[0];
+
+    await expect(resolveEntity(unsupportedType, "P-1")).rejects.toBeInstanceOf(
       UnsupportedEntityTypeError
     );
   });

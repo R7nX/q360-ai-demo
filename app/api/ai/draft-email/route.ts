@@ -35,10 +35,9 @@ export async function POST(request: NextRequest | Request) {
 
   const entityType = normalizeEntityType(body.entityType);
   if (!entityType) {
-    return new Response(
-      'Invalid entityType. Supported: "dispatch", "project", "customer", "servicecontract", "timebill".',
-      { status: 400 }
-    );
+    return new Response('Invalid entityType. Supported: "dispatch".', {
+      status: 400,
+    });
   }
 
   const entityId = body.entityId;
