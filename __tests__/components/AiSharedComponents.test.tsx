@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 /**
- * Component tests for DataSummary, ActionRecommender, StatusReport, and SmartReply widgets.
+ * Component tests for the shared AI widgets exported for Team 1 and Team 3.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import DataSummary from "@/components/ai/DataSummary";
-import ActionRecommender from "@/components/ai/ActionRecommender";
-import StatusReport from "@/components/ai/StatusReport";
-import SmartReply from "@/components/ai/SmartReply";
+import DataSummary, { DataSummary as NamedDataSummary } from "@/components/ai/DataSummary";
+import EmailDrafter, { EmailDrafter as NamedEmailDrafter } from "@/components/ai/EmailDrafter";
+import ActionRecommender, {
+  ActionRecommender as NamedActionRecommender,
+} from "@/components/ai/ActionRecommender";
+import StatusReport, { StatusReport as NamedStatusReport } from "@/components/ai/StatusReport";
+import SmartReply, { SmartReply as NamedSmartReply } from "@/components/ai/SmartReply";
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -17,6 +20,43 @@ beforeEach(() => {
     clipboard: {
       writeText: vi.fn(),
     },
+  });
+});
+
+describe("named exports", () => {
+  it("exposes named component exports for the shared handoff surface", () => {
+    expect(NamedDataSummary).toBe(DataSummary);
+    expect(NamedEmailDrafter).toBe(EmailDrafter);
+    expect(NamedActionRecommender).toBe(ActionRecommender);
+    expect(NamedStatusReport).toBe(StatusReport);
+    expect(NamedSmartReply).toBe(SmartReply);
+  });
+});
+
+describe("EmailDrafter", () => {
+  it("posts to the shared draft-email route and renders subject/body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          result: {
+            subject: "Project update",
+            content: "Draft body",
+            metadata: {},
+          },
+        }),
+      })
+    );
+
+    render(<EmailDrafter entityId="P-1" entityType="project" tone="formal" />);
+    await userEvent.click(screen.getByRole("button", { name: /generate/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Project update")).toBeInTheDocument();
+      expect(screen.getByText("Draft body")).toBeInTheDocument();
+    });
   });
 });
 

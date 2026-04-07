@@ -6,6 +6,13 @@ import type { Customer, Dispatch, Site, TimeBill } from "@/types/q360";
 
 const {
   mockFormatDispatchForPrompt,
+  mockGetCustomerByNo,
+  mockGetDispatchById,
+  mockGetProjectByNo,
+  mockGetServiceContractByNo,
+  mockGetSiteByNo,
+  mockGetTimeBillById,
+  mockGetTimeBillsByDispatch,
   mockGetDispatchByIdFromMockDb,
   mockGetCustomerFromMockDb,
   mockGetSiteFromMockDb,
@@ -91,6 +98,13 @@ const {
 
   return {
     mockFormatDispatchForPrompt: vi.fn(),
+    mockGetCustomerByNo: vi.fn(),
+    mockGetDispatchById: vi.fn(),
+    mockGetProjectByNo: vi.fn(),
+    mockGetServiceContractByNo: vi.fn(),
+    mockGetSiteByNo: vi.fn(),
+    mockGetTimeBillById: vi.fn(),
+    mockGetTimeBillsByDispatch: vi.fn(),
     mockGetDispatchByIdFromMockDb: vi.fn(),
     mockGetCustomerFromMockDb: vi.fn(),
     mockGetSiteFromMockDb: vi.fn(),
@@ -106,6 +120,13 @@ const {
 
 vi.mock("@/lib/q360Client", () => ({
   formatDispatchForPrompt: mockFormatDispatchForPrompt,
+  getCustomerByNo: mockGetCustomerByNo,
+  getDispatchById: mockGetDispatchById,
+  getProjectByNo: mockGetProjectByNo,
+  getServiceContractByNo: mockGetServiceContractByNo,
+  getSiteByNo: mockGetSiteByNo,
+  getTimeBillById: mockGetTimeBillById,
+  getTimeBillsByDispatch: mockGetTimeBillsByDispatch,
   FALLBACK_DISPATCHES: [fallbackDispatch],
   FALLBACK_CUSTOMERS: { [fallbackCustomer.customerno]: fallbackCustomer },
   FALLBACK_SITES: { [fallbackSite.siteno]: fallbackSite },
@@ -130,16 +151,17 @@ beforeEach(() => {
   mockGetCustomerFromMockDb.mockResolvedValue(dbCustomer);
   mockGetSiteFromMockDb.mockResolvedValue(dbSite);
   mockGetTimeBillsFromMockDb.mockResolvedValue([]);
+  mockGetDispatchById.mockResolvedValue(null);
+  mockGetCustomerByNo.mockResolvedValue(null);
+  mockGetProjectByNo.mockResolvedValue(null);
+  mockGetServiceContractByNo.mockResolvedValue(null);
+  mockGetSiteByNo.mockResolvedValue(null);
+  mockGetTimeBillById.mockResolvedValue(null);
+  mockGetTimeBillsByDispatch.mockResolvedValue([]);
   mockFormatDispatchForPrompt.mockReturnValue("FORMATTED");
 });
 
 describe("entityResolver.resolveEntity", () => {
-  it("throws UnsupportedEntityTypeError for non-dispatch types", async () => {
-    await expect(resolveEntity("project", "P-1")).rejects.toBeInstanceOf(
-      UnsupportedEntityTypeError
-    );
-  });
-
   it("resolves from mock DB without time bills by default", async () => {
     const result = await resolveEntity("dispatch", "DB-001");
 
@@ -187,11 +209,59 @@ describe("entityResolver.resolveEntity", () => {
     );
   });
 
+  it("falls through to live Q360 dispatch lookup when mock DB misses", async () => {
+    mockGetDispatchByIdFromMockDb.mockResolvedValue(null);
+    mockGetDispatchById.mockResolvedValue(dbDispatch);
+    mockGetCustomerByNo.mockResolvedValue(dbCustomer);
+    mockGetSiteByNo.mockResolvedValue(dbSite);
+
+    const result = await resolveEntity("dispatch", "DB-001");
+
+    expect(result.raw.dispatch).toEqual(dbDispatch);
+    expect(mockGetDispatchById).toHaveBeenCalledWith("DB-001");
+    expect(mockGetCustomerByNo).toHaveBeenCalledWith("CUST-DB-001");
+    expect(mockGetSiteByNo).toHaveBeenCalledWith("SITE-DB-001");
+  });
+
+  it("resolves a project through the live Q360 helpers", async () => {
+    mockGetProjectByNo.mockResolvedValue({
+      projectno: "P-100",
+      title: "Boiler Upgrade",
+      customerno: "CUST-DB-001",
+      siteno: "SITE-DB-001",
+      projectleader: "Pat PM",
+      statuscode: "ACTIVE",
+      startdate: "2026-04-01",
+      enddate: "2026-04-30",
+      percentcomplete: 55,
+      hoursbudget: 120,
+      revenuebudget: 25000,
+      branch: "MAIN",
+    });
+    mockGetCustomerByNo.mockResolvedValue(dbCustomer);
+    mockGetSiteByNo.mockResolvedValue(dbSite);
+
+    const result = await resolveEntity("project", "P-100");
+
+    expect(result.raw.project?.projectno).toBe("P-100");
+    expect(result.raw.customer).toEqual(dbCustomer);
+    expect(result.formatted).toContain("Project: Boiler Upgrade (P-100)");
+    expect(result.formatted).toContain("Customer: DB Customer (CUST-DB-001)");
+  });
+
   it("throws EntityNotFoundError when no DB or fallback match exists", async () => {
     mockGetDispatchByIdFromMockDb.mockResolvedValue(null);
 
     await expect(resolveEntity("dispatch", "MISSING-1")).rejects.toBeInstanceOf(
       EntityNotFoundError
+    );
+  });
+
+  it("throws UnsupportedEntityTypeError for values outside the shared contract", async () => {
+    const unsupportedType = "invoice" as unknown as Parameters<typeof resolveEntity>[0];
+
+    await expect(resolveEntity(unsupportedType, "INV-1")).rejects.toBeInstanceOf(
+      UnsupportedEntityTypeError
     );
   });
 });

@@ -6,19 +6,23 @@
 import { useCallback, useState } from "react";
 import { MessageSquareReply, Copy, Check } from "lucide-react";
 import { API } from "@/lib/constants";
-import type { AiEntityType, AiToolResponse, ToneOption } from "@/types/feature2";
+import type {
+  AiEntityType,
+  AiToolResponse,
+  AiToneOption,
+} from "@/types/feature2";
 
-interface SmartReplyProps {
+export interface SmartReplyProps {
   entityId: string;
   entityType?: AiEntityType;
   intent?: string;
   audience?: "manager" | "customer" | "technician" | "internal";
-  tone?: ToneOption;
+  tone?: AiToneOption;
   context?: Record<string, unknown>;
   defaultInboundMessage?: string;
 }
 
-export default function SmartReply({
+export function SmartReply({
   entityId,
   entityType = "dispatch",
   intent = "smart-reply",
@@ -141,3 +145,5 @@ export default function SmartReply({
     </div>
   );
 }
+
+export default SmartReply;
