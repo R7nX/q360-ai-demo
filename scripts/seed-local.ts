@@ -2,8 +2,8 @@
 /**
  * seed-local.ts
  *
- * Seeds a local SQLite mock.db with realistic dispatch, customer, and site
- * data — no Q360 API credentials needed.
+ * Seeds a local DATABASE_URL-backed SQLite file, defaulting to mock.db,
+ * with realistic dispatch, customer, and site data — no Q360 API credentials needed.
  *
  * Usage:
  *   npx tsx scripts/seed-local.ts
@@ -11,7 +11,7 @@
 
 import Database from "better-sqlite3";
 import { faker } from "@faker-js/faker";
-import path from "path";
+import { getSqliteDbPath } from "../lib/sqlite-path";
 
 try {
   process.loadEnvFile(".env.local");
@@ -19,13 +19,7 @@ try {
   // .env.local not found — fall back to system environment variables
 }
 
-const databaseUrl = process.env.DATABASE_URL;
-const DB_PATH =
-  databaseUrl?.startsWith("file:")
-    ? path.isAbsolute(databaseUrl.slice(5))
-      ? databaseUrl.slice(5)
-      : path.resolve(process.cwd(), databaseUrl.slice(5).replace(/^\.\//, ""))
-    : path.resolve(process.cwd(), "mock.db");
+const DB_PATH = getSqliteDbPath(process.env.DATABASE_URL);
 const DISPATCH_COUNT = 20;
 const CUSTOMER_COUNT = 10;
 const SITE_COUNT = 12;
