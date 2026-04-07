@@ -140,9 +140,9 @@ Once the code contract is fixed, update the planning and handoff docs to remove 
 
 Targets:
 
-- `docs/plans/FEATURE_2_PLAN.md`
-- `docs/notes/2026-04-05-feature2-handoff.md`
-- `docs/plans/PROJECT_MASTER_PLAN.md` if integration examples or export assumptions need correction
+- `docs/plans/feature-2-plan.md`
+- `docs/notes/2026-04-05-feature-2-handoff.md`
+- `docs/plans/project-master-plan.md` if integration examples or export assumptions need correction
 
 Expected outcome:
 

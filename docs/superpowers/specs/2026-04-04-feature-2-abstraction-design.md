@@ -131,7 +131,7 @@ Implemented and unchanged in this revision:
 - `app/feature2/overdue/page.tsx` (scan, filter/sort, summary + cards)
 - `AlertCard` and `StatsSummaryBar` components
 
-Urgency tiering and days-overdue rules remain aligned with `docs/plans/FEATURE_2_PLAN.md`.
+Urgency tiering and days-overdue rules remain aligned with `docs/plans/feature-2-plan.md`.
 
 ---
 

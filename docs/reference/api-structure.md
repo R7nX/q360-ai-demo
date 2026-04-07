@@ -1,4 +1,4 @@
-# API_STRUCTURE.md — Q360 Platform Reference
+# API Structure — Q360 Platform Reference
 
 > Comprehensive reference for the Q360 v25.01.001 REST API and full platform navigation/data model.
 > Based on: Live Data Dictionary API (1,633 tables), live Toolbar API (658 nav items via fshirley session), and JS bundle analysis.

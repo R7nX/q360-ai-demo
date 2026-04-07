@@ -3,7 +3,7 @@
 > **Owner:** Team 2  
 > **Branch:** `feature/2-utility-suite`  
 > **Deadline:** End of April 2026  
-> **Last updated:** 2026-04-06  
+> **Last updated:** 2026-04-07  
 > **Status:** Core Feature 2 scope complete; shared-contract review fixes applied; handoff validation in progress
 
 ---
@@ -45,10 +45,10 @@ This file is the current source of truth for Feature 2 status and remaining hand
   - `components/ai/StatusReport.tsx`
   - `components/ai/SmartReply.tsx`
 - Shared component gallery/harness is mounted on `/feature2`.
-- Verification passed:
-  - `npm test` (145 tests)
-  - `npm run lint`
-  - `npm run build`
+- Current branch verification on 2026-04-07:
+  - `npm test` -> pass (`145` tests, `14` files)
+  - `npm run lint` -> pass
+  - `npm run build` -> blocked in this restricted environment by `next/font` Google Fonts fetch (`Geist`, `Geist Mono`)
 
 ### Remaining / Follow-up
 
@@ -220,14 +220,14 @@ Response modes:
 
 ---
 
-## 8. Verification Snapshot (2026-04-05)
+## 8. Verification Snapshot (2026-04-07)
 
 - `npm test`  
-  Result: pass (`8` test files, `108` tests).
+  Result: pass (`14` test files, `145` tests).
 - `npm run lint`  
   Result: pass.
 - `npm run build`  
-  Result: pass.
+  Result: blocked in this restricted environment by `next/font` Google Fonts fetch (`Geist`, `Geist Mono`).
 
 Coverage highlights:
 
@@ -236,10 +236,11 @@ Coverage highlights:
 - `computeDaysOverdue`
 - Feature 2 page and selector behavior
 - Draft-email and Feature 2 generation route behavior
+- Shared AI component exports and interaction behavior (`__tests__/components/AiSharedComponents.test.tsx`)
 
-Known test gap:
+Remaining validation gap:
 
-- No dedicated tests yet for new shared UI components beyond existing page-level coverage.
+- Real sandbox-ID validation is still pending for the shared tool routes/components.
 
 ---
 
