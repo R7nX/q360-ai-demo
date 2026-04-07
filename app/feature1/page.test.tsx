@@ -41,6 +41,7 @@ describe("Feature 1 page", () => {
           lowPriorityCount: 0,
           mediumPriorityCount: 0,
           recommendationCount: 0,
+          triggeredRuleCount: 0,
           triggeredRuleCounts: {
             billing_gap: 0,
             overdue_task: 0,

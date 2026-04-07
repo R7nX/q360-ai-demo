@@ -138,7 +138,6 @@ console.log(`Seeded ${SITE_COUNT} sites`);
 
 // ── Seed dispatches ──
 
-const STATUSES = ["OPEN", "CLOSED", "IN PROGRESS", "PENDING", "ON HOLD"];
 const PROBLEMS = [
   "HVAC unit not cooling properly. Temperature rising in server room.",
   "Elevator stuck on 3rd floor. Passengers safely evacuated.",

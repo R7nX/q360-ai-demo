@@ -1,3 +1,6 @@
+/**
+ * Read-only SQLite accessors for local `mock.db` (dispatches, customers, sites, time bills, tasks).
+ */
 import Database from "better-sqlite3";
 import type { Dispatch, Customer, Site, TimeBill } from "@/types/q360";
 import { openReadonlySqliteDb } from "@/lib/sqlite";
@@ -11,6 +14,43 @@ function hasTable(db: Database.Database, table: string): boolean {
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
     .get(table) as { name: string } | undefined;
   return !!row;
+}
+
+export function hasMockDbTable(table: string): boolean {
+  const db = getDb();
+  if (!db) return false;
+
+  try {
+    return hasTable(db, table);
+  } finally {
+    db.close();
+  }
+}
+
+export function getPreferredTechnicianFromMockDb(): string | null {
+  const db = getDb();
+  if (!db) return null;
+
+  try {
+    if (!hasTable(db, "dispatch")) return null;
+
+    const row = db
+      .prepare(
+        `
+          SELECT TECHASSIGNED
+          FROM dispatch
+          WHERE TECHASSIGNED IS NOT NULL AND TECHASSIGNED != ''
+          GROUP BY TECHASSIGNED
+          ORDER BY COUNT(*) DESC, TECHASSIGNED ASC
+          LIMIT 1
+        `
+      )
+      .get() as { TECHASSIGNED?: string } | undefined;
+
+    return row?.TECHASSIGNED ?? null;
+  } finally {
+    db.close();
+  }
 }
 
 export function getDispatchesFromMockDb(): Dispatch[] | null {
@@ -89,15 +129,56 @@ export function getSiteFromMockDb(siteno: string): Site | null {
       .get(siteno) as Record<string, unknown> | undefined;
 
     if (!row) return null;
+    const r = lowerKeys(row);
     return {
-      siteno: str(row.siteno) ?? siteno,
-      sitename: str(row.sitename) ?? "Unknown Site",
-      address: str(row.address),
-      city: str(row.city),
-      state: str(row.state),
-      zip: str(row.zip),
-      phone: str(row.phone),
+      siteno: str(r.siteno) ?? siteno,
+      sitename: str(r.sitename) ?? "Unknown Site",
+      address: str(r.address) ?? str(r.firstline),
+      city: str(r.city),
+      state: str(r.state),
+      zip: str(r.zip),
+      phone: str(r.phone),
     };
+  } finally {
+    db.close();
+  }
+}
+
+export function getAllCustomersFromMockDb(): Record<string, Customer> {
+  const db = getDb();
+  if (!db) return {};
+
+  try {
+    if (!hasTable(db, "customer")) return {};
+    const rows = db.prepare("SELECT * FROM customer").all() as Record<string, unknown>[];
+    const map: Record<string, Customer> = {};
+    for (const row of rows) {
+      const r = lowerKeys(row);
+      const no = str(r.customerno);
+      if (!no) continue;
+      map[no] = { customerno: no, company: str(r.company) ?? "Unknown", type: str(r.type), status: str(r.status) ?? str(r.statuscode) };
+    }
+    return map;
+  } finally {
+    db.close();
+  }
+}
+
+export function getAllSitesFromMockDb(): Record<string, Site> {
+  const db = getDb();
+  if (!db) return {};
+
+  try {
+    if (!hasTable(db, "site")) return {};
+    const rows = db.prepare("SELECT * FROM site").all() as Record<string, unknown>[];
+    const map: Record<string, Site> = {};
+    for (const row of rows) {
+      const r = lowerKeys(row);
+      const no = str(r.siteno);
+      if (!no) continue;
+      map[no] = { siteno: no, sitename: str(r.sitename) ?? "Unknown Site", address: str(r.address) ?? str(r.firstline), city: str(r.city), state: str(r.state), zip: str(r.zip), phone: str(r.phone) };
+    }
+    return map;
   } finally {
     db.close();
   }
@@ -112,12 +193,39 @@ export function getTimeBillsFromMockDb(dispatchno: string): TimeBill[] | null {
     const rows = db
       .prepare("SELECT * FROM timebill WHERE dispatchno = ?")
       .all(dispatchno) as Record<string, unknown>[];
-    return rows.map((r) => ({
-      tbstarttime: str(r.tbstarttime),
-      tbendtime: str(r.tbendtime),
-      traveltime: str(r.traveltime),
-      techassigned: str(r.techassigned),
-    }));
+    return rows.map((row) => {
+      const r = lowerKeys(row);
+      return {
+        tbstarttime: str(r.date),
+        tbendtime: str(r.timebilled),
+        traveltime: null,
+        techassigned: str(r.userid),
+      };
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export function getTasksFromMockDb(userid?: string): Record<string, unknown>[] | null {
+  const db = getDb();
+  if (!db) return null;
+
+  try {
+    const tableName =
+      ["TASKS", "tasks", "task"].find((table) => hasTable(db, table)) ?? null;
+
+    if (!tableName) return null;
+
+    const rows = userid
+      ? db
+          .prepare(`SELECT * FROM ${tableName} WHERE USERID = ? ORDER BY ENDDATE ASC, PRIORITY ASC, TASKID ASC`)
+          .all(userid)
+      : db
+          .prepare(`SELECT * FROM ${tableName} ORDER BY ENDDATE ASC, PRIORITY ASC, TASKID ASC`)
+          .all();
+
+    return rows as Record<string, unknown>[];
   } finally {
     db.close();
   }
@@ -149,9 +257,9 @@ function normalizeDispatch(row: Record<string, unknown>): Dispatch {
     date: str(r.date) ?? str(r.opendate) ?? str(r.calldate),
     closedate: str(r.closedate),
     estfixtime: str(r.estfixtime),
-    callername: str(r.callername),
+    callername: str(r.caller),
     calleremail: str(r.calleremail),
-    callerphone: str(r.callerphone),
-    description: str(r.description),
+    callerphone: str(r.callercontactno),
+    description: str(r.detail),
   };
 }

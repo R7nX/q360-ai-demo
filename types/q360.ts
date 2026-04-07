@@ -125,7 +125,7 @@ export interface Dispatch {
   callstartdate?: string | null;
   date?: string | null;
   closedate: string | null;
-  priority: string | number | null;
+  priority: string | null;
   branch?: string | null;
   caller?: string | null;
   callername?: string | null;
@@ -146,8 +146,8 @@ export interface Customer {
   zip?: string | null;
   salesrep?: string | null;
   status: string | null;
-  balance?: number | null;
-  ytdsales?: number | null;
+  balance?: string | number | null;
+  ytdsales?: string | number | null;
   type?: string | null;
 }
 
@@ -174,21 +174,22 @@ export interface Project {
   statuscode: string;
   startdate?: string | null;
   enddate?: string | null;
-  percentcomplete?: number | null;
-  hoursbudget?: number | null;
-  revenuebudget?: number | null;
+  percentcomplete?: string | number | null;
+  hoursbudget?: string | number | null;
+  revenuebudget?: string | number | null;
+  branch?: string | null;
 }
 
 export interface TimeBill {
-  timebillno?: string;
+  timebillno?: string | null;
   userid?: string | null;
   dispatchno?: string | null;
   customerno?: string | null;
   projectno?: string | null;
   date?: string | null;
   endtime?: string | null;
-  timebilled?: number | null;
-  rate?: number | null;
+  timebilled?: string | number | null;
+  rate?: string | number | null;
   category?: string | null;
   tbstarttime?: string | null;
   tbendtime?: string | null;
@@ -200,12 +201,13 @@ export interface ServiceContract {
   contractno: string;
   title: string;
   customerno: string;
-  startdate: string;
-  enddate: string;
+  siteno?: string | null;
+  startdate: string | null;
+  enddate: string | null;
   renewaldate?: string | null;
   statuscode: string;
-  monthlytotal?: number | null;
-  total?: number | null;
+  monthlytotal?: string | number | null;
+  total?: string | number | null;
 }
 
 export interface User {
@@ -223,8 +225,8 @@ export interface Invoice {
   customerno: string;
   invoicedate: string;
   duedate?: string | null;
-  invamount: number | null;
-  balance: number | null;
+  invamount: string | number | null;
+  balance: string | number | null;
   invoicetype?: string | null;
   statuscode?: string | null;
 }

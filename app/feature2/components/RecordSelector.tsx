@@ -1,3 +1,6 @@
+/**
+ * Fetches `/api/feature2/records` and lets the user pick a dispatch for automation.
+ */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,11 +10,21 @@ import type { RecordSummary } from "@/types/feature2";
 interface RecordSelectorProps {
   selectedId: string | null;
   onSelect: (record: RecordSummary) => void;
+  /** When set, filters the dropdown to relevant statuses for the automation type */
+  automationType?: string | null;
 }
+
+const STATUS_FILTERS: Record<string, (status: string) => boolean> = {
+  "project-status": (s) => s === "OPEN" || s === "IN PROGRESS" || s === "PENDING" || s === "ON HOLD",
+  "service-closure": (s) => s === "CLOSED",
+  "overdue-alert": (s) => s === "OPEN" || s === "IN PROGRESS" || s === "PENDING" || s === "ON HOLD",
+  "new-call-ack": (s) => s === "OPEN" || s === "PENDING",
+};
 
 export default function RecordSelector({
   selectedId,
   onSelect,
+  automationType,
 }: RecordSelectorProps) {
   const [records, setRecords] = useState<RecordSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +74,12 @@ export default function RecordSelector({
     );
   }
 
-  const selected = records.find((r) => r.id === selectedId);
+  const statusFilter = automationType ? STATUS_FILTERS[automationType] : null;
+  const visibleRecords = statusFilter
+    ? records.filter((r) => statusFilter(r.status))
+    : records;
+
+  const selected = visibleRecords.find((r) => r.id === selectedId);
 
   return (
     <div className="space-y-3">
@@ -75,7 +93,7 @@ export default function RecordSelector({
           className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-3 pr-10 text-sm text-slate-800 shadow-sm transition-colors hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
         >
           <option value="">Choose a dispatch record...</option>
-          {records.map((r) => (
+          {visibleRecords.map((r) => (
             <option key={r.id} value={r.id}>
               [{r.id}] {r.customerName} - {r.status}
             </option>

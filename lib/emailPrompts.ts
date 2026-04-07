@@ -1,3 +1,6 @@
+/**
+ * System/user prompt builders for Feature 2 automations and shared tone instructions.
+ */
 import type { ToneOption } from "@/types/feature2";
 
 const TONE_INSTRUCTIONS: Record<ToneOption, string> = {
@@ -51,7 +54,87 @@ The email should cover:
 6. A professional sign-off inviting the customer to reach out with any questions`;
 }
 
-// ── Automation 3: Overdue Dispatch Alert ──
+// ── Automation 3: Batch Overdue Scan (Dashboard) ──
+
+export interface OverdueDispatchInput {
+  dispatchno: string;
+  customer: string;
+  site: string;
+  problem: string;
+  techAssigned: string | null;
+  priority: string | null;
+  daysOverdue: number;
+  openedDate: string | null;
+}
+
+export function overdueBatchSystemPrompt(): string {
+  return `You are a field service operations AI that analyzes overdue dispatch records.
+
+You will receive a list of open dispatches that have passed their estimated fix time, each with the number of days overdue already computed. Your job is to:
+1. Assign each dispatch an urgency tier based on these rules:
+   - CRITICAL: 14+ days overdue, OR (no tech assigned AND 7+ days overdue), OR priority = 1
+   - HIGH: 7–13 days overdue (and not CRITICAL)
+   - MEDIUM: 1–6 days overdue (and not CRITICAL)
+2. Write a 1–2 sentence aiSummary explaining why this dispatch is urgent
+3. Write a concise recommendedAction (one sentence) for the dispatch team
+
+Rules:
+- Return ONLY valid JSON — no markdown fences, no explanation outside the JSON
+- Never fabricate data not present in the records
+- Sort alerts: CRITICAL first, then HIGH, then MEDIUM. Within each tier, most overdue first
+
+Return this exact JSON structure:
+{
+  "summary": {
+    "totalScanned": <number>,
+    "totalOverdue": <number>,
+    "critical": <number>,
+    "high": <number>,
+    "medium": <number>
+  },
+  "alerts": [
+    {
+      "dispatchno": "<string>",
+      "urgencyTier": "CRITICAL" | "HIGH" | "MEDIUM",
+      "daysOverdue": <number>,
+      "customer": "<string>",
+      "site": "<string>",
+      "problem": "<string>",
+      "techAssigned": <string | null>,
+      "priority": <string | null>,
+      "aiSummary": "<1–2 sentences>",
+      "recommendedAction": "<one sentence>"
+    }
+  ]
+}`;
+}
+
+export function overdueBatchUserPrompt(
+  dispatches: OverdueDispatchInput[],
+  totalScanned: number
+): string {
+  const blocks = dispatches
+    .map(
+      (d) => `Dispatch: ${d.dispatchno}
+Customer: ${d.customer}
+Site: ${d.site}
+Problem: ${d.problem ?? "[Not provided]"}
+Tech Assigned: ${d.techAssigned ?? "UNASSIGNED"}
+Priority: ${d.priority ?? "[Not provided]"}
+Days Overdue: ${d.daysOverdue}
+Opened: ${d.openedDate ?? "[Not provided]"}`
+    )
+    .join("\n\n---\n\n");
+
+  return `Total open dispatches scanned: ${totalScanned}
+Overdue dispatches requiring analysis: ${dispatches.length}
+
+${blocks}
+
+Analyze the above and return JSON as specified.`;
+}
+
+// ── Automation 3: Overdue Dispatch Alert (single record email) ──
 
 export function overdueAlertSystemPrompt(): string {
   return `You are a field service operations manager writing internal escalation emails.
