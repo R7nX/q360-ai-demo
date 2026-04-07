@@ -429,8 +429,10 @@ export const FALLBACK_DISPATCHES: Dispatch[] = [
     customerno: "CUST001",
     siteno: "SITE001",
     statuscode: "CLOSED",
-    problem: "HVAC unit not cooling properly in server room. Temperature reaching critical levels.",
-    solution: "Replaced faulty compressor and recharged refrigerant. System tested and operating within normal parameters.",
+    problem:
+      "HVAC unit not cooling properly in server room. Temperature reaching critical levels.",
+    solution:
+      "Replaced faulty compressor and recharged refrigerant. System tested and operating within normal parameters.",
     priority: "1",
     techassigned: "Maria Chen",
     date: "2026-03-20",
@@ -447,7 +449,8 @@ export const FALLBACK_DISPATCHES: Dispatch[] = [
     customerno: "CUST002",
     siteno: "SITE002",
     statuscode: "OPEN",
-    problem: "Elevator inspection requested for annual compliance. Three elevators in building.",
+    problem:
+      "Elevator inspection requested for annual compliance. Three elevators in building.",
     solution: null,
     priority: "2",
     techassigned: "James Rodriguez",
@@ -466,7 +469,8 @@ export const FALLBACK_DISPATCHES: Dispatch[] = [
     siteno: "SITE003",
     statuscode: "CLOSED",
     problem: "Fire alarm panel showing fault codes. Multiple zones reporting errors.",
-    solution: "Replaced smoke detector in Zone 3, reset panel. All zones testing clear. Documented fault codes for building records.",
+    solution:
+      "Replaced smoke detector in Zone 3, reset panel. All zones testing clear. Documented fault codes for building records.",
     priority: "1",
     techassigned: "Alex Kim",
     date: "2026-03-15",
@@ -480,13 +484,52 @@ export const FALLBACK_DISPATCHES: Dispatch[] = [
 ];
 
 export const FALLBACK_CUSTOMERS: Record<string, Customer> = {
-  CUST001: { customerno: "CUST001", company: "Acme Corporation", type: "Commercial", status: "Active" },
-  CUST002: { customerno: "CUST002", company: "Meridian Properties", type: "Commercial", status: "Active" },
-  CUST003: { customerno: "CUST003", company: "Downtown Plaza Management", type: "Commercial", status: "Active" },
+  CUST001: {
+    customerno: "CUST001",
+    company: "Acme Corporation",
+    type: "Commercial",
+    status: "Active",
+  },
+  CUST002: {
+    customerno: "CUST002",
+    company: "Meridian Properties",
+    type: "Commercial",
+    status: "Active",
+  },
+  CUST003: {
+    customerno: "CUST003",
+    company: "Downtown Plaza Management",
+    type: "Commercial",
+    status: "Active",
+  },
 };
 
 export const FALLBACK_SITES: Record<string, Site> = {
-  SITE001: { siteno: "SITE001", sitename: "Acme HQ - Server Building", address: "1200 Tech Drive", city: "Salt Lake City", state: "UT", zip: "84101", phone: "555-0100" },
-  SITE002: { siteno: "SITE002", sitename: "Meridian Tower", address: "500 Main Street", city: "Provo", state: "UT", zip: "84601", phone: "555-0200" },
-  SITE003: { siteno: "SITE003", sitename: "Downtown Plaza", address: "88 Center Ave", city: "Ogden", state: "UT", zip: "84401", phone: "555-0300" },
+  SITE001: {
+    siteno: "SITE001",
+    sitename: "Acme HQ - Server Building",
+    address: "1200 Tech Drive",
+    city: "Salt Lake City",
+    state: "UT",
+    zip: "84101",
+    phone: "555-0100",
+  },
+  SITE002: {
+    siteno: "SITE002",
+    sitename: "Meridian Tower",
+    address: "500 Main Street",
+    city: "Provo",
+    state: "UT",
+    zip: "84601",
+    phone: "555-0200",
+  },
+  SITE003: {
+    siteno: "SITE003",
+    sitename: "Downtown Plaza",
+    address: "88 Center Ave",
+    city: "Ogden",
+    state: "UT",
+    zip: "84401",
+    phone: "555-0300",
+  },
 };

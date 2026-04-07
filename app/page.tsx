@@ -17,7 +17,7 @@ const FEATURES = [
     bg: "bg-violet-50",
     iconColor: "text-violet-600",
     team: "Team 1",
-    active: false,
+    active: true,
   },
   {
     number: "02",

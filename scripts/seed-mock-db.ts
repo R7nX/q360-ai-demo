@@ -18,7 +18,7 @@
  *   - The Q360 Data Dictionary API (schema fetching) must be accessible
  *   - Synthetic data is generated based on column names and types
  *   - Re-running will DROP and re-create the table (fresh seed each time)
- *   - Output database: mock.db (gitignored)
+ *   - Output database: DATABASE_URL-backed SQLite file, defaulting to mock.db
  *
  * AWS migration:
  *   When moving to AWS RDS, swap the Database import for a pg client
@@ -27,6 +27,7 @@
 
 import Database from 'better-sqlite3'
 import { faker } from '@faker-js/faker'
+import { getSqliteDbPath } from '../lib/sqlite-path'
 
 // Load .env.local (Node 20+ built-in — no dotenv needed)
 try {
@@ -50,7 +51,7 @@ if (!TABLE) {
 const BASE_URL = process.env.Q360_BASE_URL
 const USERNAME = process.env.Q360_API_USERNAME
 const PASSWORD = process.env.Q360_API_PASSWORD
-const DB_PATH  = 'mock.db'
+const DB_PATH = getSqliteDbPath(process.env.DATABASE_URL)
 
 if (!BASE_URL || !USERNAME || !PASSWORD) {
   console.error('Missing required env vars: Q360_BASE_URL, Q360_API_USERNAME, Q360_API_PASSWORD')
@@ -61,6 +62,7 @@ if (!BASE_URL || !USERNAME || !PASSWORD) {
 console.log(` Base URL : ${BASE_URL}`)
 console.log(` API User : ***`)
 console.log(` Auth     : Basic ***`)
+console.log(` SQLite DB: ${DB_PATH}`)
 console.log()
 
 const AUTH_HEADER = 'Basic ' + Buffer.from(`${USERNAME}:${PASSWORD}`).toString('base64')
