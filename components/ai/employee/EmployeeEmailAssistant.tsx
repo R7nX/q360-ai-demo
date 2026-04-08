@@ -63,16 +63,29 @@ export function EmployeeEmailAssistant({
         }),
       });
 
-      const payload = (await res.json()) as AiToolResponse;
+      const rawBody = await res.text();
+      let payload: AiToolResponse | null = null;
+      try {
+        payload = rawBody ? (JSON.parse(rawBody) as AiToolResponse) : null;
+      } catch {
+        payload = null;
+      }
 
       if (!res.ok) {
-        throw new Error(payload.message || `Error ${res.status}`);
+        const message =
+          payload?.message ||
+          rawBody.trim() ||
+          `Error ${res.status}: failed to generate draft.`;
+        throw new Error(message);
+      }
+
+      if (!payload) {
+        throw new Error("Invalid response from draft-email route.");
       }
 
       if (!payload.success || !payload.result) {
-        throw new Error(payload.message || "Generation failed");
+        throw new Error(payload.message || "Generation failed.");
       }
-
       setSubject(payload.result.subject ?? "");
       setBody(payload.result.content ?? "");
     } catch (err) {

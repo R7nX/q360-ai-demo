@@ -213,7 +213,8 @@ q360-ai-demo/
 ├── docs/plans/FEATURE_TAB_MAPPING.md                # Tab ownership map
 │
 ├── scripts/
-│   └── seed-mock-db.ts                   # [SHARED] Mock data seeder
+│   ├── seed.ts                           # [SHARED] Unified seeder (story + dynamic table modes)
+│   └── seed-data.ts                      # [SHARED] Hardcoded narrative seed dataset
 │
 ├── public/
 │   ├── logo.svg                          # [SHARED]
