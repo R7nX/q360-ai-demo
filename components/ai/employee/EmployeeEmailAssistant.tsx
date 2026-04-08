@@ -86,7 +86,6 @@ export function EmployeeEmailAssistant({
       if (!payload.success || !payload.result) {
         throw new Error(payload.message || "Generation failed.");
       }
-
       setSubject(payload.result.subject ?? "");
       setBody(payload.result.content ?? "");
     } catch (err) {

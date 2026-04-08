@@ -4,7 +4,7 @@
 import type { Dispatch } from "@/types/q360";
 
 export function computeDaysOverdue(dispatch: Dispatch, today: Date): number {
-  const tryDate = (val: string | null): Date | null => {
+  const tryDate = (val: string | null | undefined): Date | null => {
     if (!val || val === ".00" || val.trim() === "") return null;
     const d = new Date(val);
     return isNaN(d.getTime()) ? null : d;

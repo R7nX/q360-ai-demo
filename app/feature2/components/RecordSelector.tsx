@@ -34,7 +34,18 @@ export default function RecordSelector({
     async function fetchRecords() {
       try {
         const res = await fetch("/api/feature2/records");
-        if (!res.ok) throw new Error("Failed to fetch records");
+        if (!res.ok) {
+          let message = "Failed to fetch records";
+          try {
+            const payload = (await res.json()) as { error?: string };
+            if (payload.error) {
+              message = payload.error;
+            }
+          } catch {
+            // ignore response parsing failures and fall back to the generic message
+          }
+          throw new Error(message);
+        }
         const data = await res.json();
         setRecords(data.records);
       } catch (err) {

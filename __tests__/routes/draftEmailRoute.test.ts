@@ -7,6 +7,13 @@ import type { Dispatch, Customer, Site } from "@/types/q360";
 const {
   mockGenerateStream,
   mockFormatDispatchForPrompt,
+  mockGetCustomerByNo,
+  mockGetDispatchById,
+  mockGetProjectByNo,
+  mockGetServiceContractByNo,
+  mockGetSiteByNo,
+  mockGetTimeBillById,
+  mockGetTimeBillsByDispatch,
   mockGetDispatchByIdFromMockDb,
   mockGetCustomerFromMockDb,
   mockGetSiteFromMockDb,
@@ -100,6 +107,13 @@ const {
   return {
     mockGenerateStream: vi.fn(),
     mockFormatDispatchForPrompt: vi.fn(),
+    mockGetCustomerByNo: vi.fn(),
+    mockGetDispatchById: vi.fn(),
+    mockGetProjectByNo: vi.fn(),
+    mockGetServiceContractByNo: vi.fn(),
+    mockGetSiteByNo: vi.fn(),
+    mockGetTimeBillById: vi.fn(),
+    mockGetTimeBillsByDispatch: vi.fn(),
     mockGetDispatchByIdFromMockDb: vi.fn(),
     mockGetCustomerFromMockDb: vi.fn(),
     mockGetSiteFromMockDb: vi.fn(),
@@ -126,6 +140,13 @@ vi.mock("@/lib/agentClient", () => ({
 
 vi.mock("@/lib/q360Client", () => ({
   formatDispatchForPrompt: mockFormatDispatchForPrompt,
+  getCustomerByNo: mockGetCustomerByNo,
+  getDispatchById: mockGetDispatchById,
+  getProjectByNo: mockGetProjectByNo,
+  getServiceContractByNo: mockGetServiceContractByNo,
+  getSiteByNo: mockGetSiteByNo,
+  getTimeBillById: mockGetTimeBillById,
+  getTimeBillsByDispatch: mockGetTimeBillsByDispatch,
   FALLBACK_DISPATCHES: [fallbackDispatch],
   FALLBACK_CUSTOMERS: { [fallbackCustomer.customerno]: fallbackCustomer },
   FALLBACK_SITES: { [fallbackSite.siteno]: fallbackSite },
@@ -174,6 +195,13 @@ beforeEach(() => {
   mockGetDispatchByIdFromMockDb.mockResolvedValue(dbDispatch);
   mockGetCustomerFromMockDb.mockResolvedValue(dbCustomer);
   mockGetSiteFromMockDb.mockResolvedValue(dbSite);
+  mockGetDispatchById.mockResolvedValue(null);
+  mockGetCustomerByNo.mockResolvedValue(null);
+  mockGetProjectByNo.mockResolvedValue(null);
+  mockGetServiceContractByNo.mockResolvedValue(null);
+  mockGetSiteByNo.mockResolvedValue(null);
+  mockGetTimeBillById.mockResolvedValue(null);
+  mockGetTimeBillsByDispatch.mockResolvedValue([]);
   mockFormatDispatchForPrompt.mockReturnValue("FORMATTED_DATA");
 
   mockProjectStatusSystemPrompt.mockReturnValue("SYS_PROJECT");
@@ -244,15 +272,15 @@ describe("POST /api/ai/draft-email", () => {
   it("returns 400 when entityType is unsupported", async () => {
     const res = await POST(
       makeRequest({
-        entityType: "project",
-        entityId: "P-001",
+        entityType: "invoice",
+        entityId: "INV-001",
         intent: "project-status",
         tone: "professional",
       }) as never
     );
 
     expect(res.status).toBe(400);
-    await expect(res.text()).resolves.toContain('Invalid entityType. Supported: "dispatch".');
+    await expect(res.text()).resolves.toContain("Invalid entityType");
   });
 
   it("returns 404 when dispatch cannot be resolved", async () => {

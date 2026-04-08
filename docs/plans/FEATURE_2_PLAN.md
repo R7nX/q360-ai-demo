@@ -3,8 +3,8 @@
 > **Owner:** Team 2  
 > **Branch:** `feature/2-utility-suite`  
 > **Deadline:** End of April 2026  
-> **Last updated:** 2026-04-05  
-> **Status:** Core Feature 2 scope complete; polish and handoff validation in progress
+> **Last updated:** 2026-04-06  
+> **Status:** Core Feature 2 scope complete; shared-contract review fixes applied; handoff validation in progress
 
 ---
 
@@ -29,7 +29,9 @@ This file is the current source of truth for Feature 2 status and remaining hand
 - Overdue UI components are built: `AlertCard`, `StatsSummaryBar`.
 - Shared draft route exists: `/api/ai/draft-email`.
 - `/api/feature2/generate` now uses shared draft logic (thin wrapper behavior).
-- Shared resolver exists: `lib/entityResolver.ts` (dispatch-first support).
+- Shared resolver exists: `lib/entityResolver.ts` with live Q360 resolution for
+  `dispatch`, `project`, `customer`, `servicecontract`, and `timebill`, plus
+  mock/fallback support for local development.
 - Optional JSON mode is supported on `/api/ai/draft-email?format=json`.
 - Shared tool routes are implemented:
   - `/api/ai/summarize`
@@ -44,19 +46,17 @@ This file is the current source of truth for Feature 2 status and remaining hand
   - `components/ai/SmartReply.tsx`
 - Shared component gallery/harness is mounted on `/feature2`.
 - Verification passed:
-  - `npm test` (108 tests)
+  - `npm test` (145 tests)
   - `npm run lint`
   - `npm run build`
 
 ### Remaining / Follow-up
 
-- Broaden `lib/entityResolver.ts` beyond dispatch when non-dispatch entity integrations are needed.
-- Add dedicated tests for new shared components (`DataSummary`, `ActionRecommender`, `StatusReport`, `SmartReply`).
 - Validate each shared tool with at least 3 real sandbox entity IDs before final demo handoff.
+- Continue adding deeper scenario coverage as Teams 1 and 3 integrate more entity-specific contexts.
 
 ### Known Drift From Older Plan Text
 
-- `/api/ai/draft-email` accepts the broader request shape, but data resolution is still dispatch-first.
 - Overdue API continues to cap analyzed records at `15` (older planning text mentioned `50`).
 
 ---
@@ -131,7 +131,7 @@ This file is the current source of truth for Feature 2 status and remaining hand
 
 ### Shared service layer
 
-- `lib/entityResolver.ts` - entity fetch + prompt formatting (dispatch-first)
+- `lib/entityResolver.ts` - entity fetch + prompt formatting for documented shared entity types
 - `lib/draftEmailService.ts` - shared draft generation and normalization logic
 - `lib/aiToolsService.ts` - summarize/recommend/status/smart-reply generation logic
 
@@ -279,4 +279,5 @@ Current integration guidance:
 - `components/ai/EmailDrafter.tsx` is stable for draft-email flows.
 - Shared tool components now exist for summarize/recommend/status-report/smart-reply.
 - `/api/ai/draft-email` supports streaming by default and JSON mode via `?format=json`.
-- If consuming non-dispatch entity types, coordinate first because resolver support is still dispatch-first.
+- Shared routes/components now accept the documented entity types:
+  `dispatch`, `project`, `customer`, `servicecontract`, and `timebill`.
