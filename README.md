@@ -31,7 +31,7 @@ The app scaffold and local tooling are in place, including:
   - `ActionRecommender`
   - `StatusReport`
   - `SmartReply`
-- Core planning docs (`docs/plans/PROJECT_MASTER_PLAN.md`, `docs/reference/API_STRUCTURE.md`, `docs/plans/FEATURE_TAB_MAPPING.md`)
+- Core planning docs (`docs/plans/project-master-plan.md`, `docs/reference/api-structure.md`, `docs/plans/feature-tab-mapping.md`)
 
 ## Tech Stack
 
@@ -101,9 +101,9 @@ Defined in `.env.example`:
 
 ## Project Docs
 
-- `docs/plans/PROJECT_MASTER_PLAN.md` — full implementation plan and ownership model
-- `docs/reference/API_STRUCTURE.md` — Q360 endpoint, schema, and auth reference
-- `docs/plans/FEATURE_TAB_MAPPING.md` — Q360 tab-to-feature mapping
+- `docs/plans/project-master-plan.md` — full implementation plan and ownership model
+- `docs/reference/api-structure.md` — Q360 endpoint, schema, and auth reference
+- `docs/plans/feature-tab-mapping.md` — Q360 tab-to-feature mapping
 - `AGENT.md` — project context and assistant guardrails
 
 ## Notes

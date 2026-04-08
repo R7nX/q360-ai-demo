@@ -15,7 +15,7 @@
 
 - Tests pass: `npm test` -> `145` tests, `14` files
 - Lint pass: `npm run lint`
-- Build pass: `npm run build`
+- Build in this restricted environment is currently blocked by `next/font` Google Fonts fetch (`Geist`, `Geist Mono`); earlier branch-local build verification had passed before this environment constraint surfaced
 
 ## 2026-04-06 Review Follow-Up Applied
 
@@ -58,7 +58,7 @@
 ## Remaining Known Gaps
 
 - Need real sandbox validation with at least 3 real IDs per shared tool for final handoff confidence.
-- `PROJECT_MASTER_PLAN` still includes unrelated pending items (`app/api/n8n/webhook/route.ts`, `components/ai/AiToolWrapper.tsx`) not completed in this pass.
+- `docs/plans/project-master-plan.md` still includes unrelated pending items (`app/api/n8n/webhook/route.ts`, `components/ai/AiToolWrapper.tsx`) not completed in this pass.
 
 ## Environment / Execution Notes
 
