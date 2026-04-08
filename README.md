@@ -89,7 +89,6 @@ Defined in `.env.example`:
 - `USE_MOCK_DATA` — `true` to use local SQLite data path
 - `DATABASE_URL` — SQLite file path for local dev
 
-`fshirley` is used for browser-session auth calls and uses the same sandbox password as `Q360_API_PASSWORD`.
 
 ## NPM Scripts
 
