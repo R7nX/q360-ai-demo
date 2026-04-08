@@ -93,6 +93,7 @@ jobs:
           export Q360_BASE_URL="http://127.0.0.1:4010"
           export Q360_API_USERNAME="ci"
           export Q360_API_PASSWORD="ci"
+          export USE_MOCK_DATA="true"
 
           READY=0
           for attempt in {1..30}; do
