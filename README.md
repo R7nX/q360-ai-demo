@@ -18,6 +18,7 @@ The app scaffold and local tooling are in place, including:
 
 - Next.js 16 + React 19 project structure
 - Local SQLite mock database (`mock.db`)
+- PostgreSQL-backed seed path via `DATABASE_URL`
 - Seeder script that pulls Q360 table schema and generates synthetic rows
 - Feature 2 shared AI routes:
   - `/api/ai/draft-email`
@@ -67,8 +68,15 @@ For sandbox authentication conventions:
 
 ```bash
 npm run tables                 # list available Q360 tables
-npm run seed -- dispatch 25    # seed a specific table into mock.db
+npm run seed -- dispatch 25    # seed a specific table into the active DB target
 ```
+
+For Feature 1 specifically, the current PostgreSQL-backed manager view is built around:
+
+- `PROJECTS`
+- `LDVIEW_PROJECT`
+- `LDVIEW_PROJECTSNAPSHOT`
+- `LDVIEW_PROJECTDETAIL`
 
 ### 4) Run development server
 
@@ -86,8 +94,8 @@ Defined in `.env.example`:
 - `Q360_API_USERNAME` — Q360 API user
 - `Q360_API_PASSWORD` — Q360 API password
 - `GEMINI_API_KEY` — AI provider key
-- `USE_MOCK_DATA` — `true` to use local SQLite data path
-- `DATABASE_URL` — SQLite file path for local dev
+- `USE_MOCK_DATA` — seed/legacy mock switch used by some tooling and non-Team-1 flows
+- `DATABASE_URL` — active database connection string; Feature 1 uses PostgreSQL whenever this is a `postgres://` or `postgresql://` URL
 
 
 ## NPM Scripts
@@ -97,7 +105,7 @@ Defined in `.env.example`:
 - `npm run start` — run production server
 - `npm run lint` — run ESLint
 - `npm run tables` — list Q360 tables from Data Dictionary API
-- `npm run seed -- <table> [count]` — seed a local table in `mock.db`
+- `npm run seed -- <table> [count]` — seed a table into the active database target
 
 ## Project Docs
 

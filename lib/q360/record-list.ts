@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import type { Q360RecordRow } from "@/lib/domain/normalizers";
-import { fetchQ360Json, isMockMode } from "@/lib/q360/client";
-import { listMockRecordRows } from "@/lib/q360/mock-sqlite";
+import { fetchQ360Json } from "@/lib/q360/client";
+import { hasFeature1PostgresDatabase, listMockRecordRows } from "@/lib/q360/mock-postgres";
 
 export type RecordListFilter = {
   field: string;
@@ -47,7 +47,7 @@ function normalizeSourceName(sourceName: string): string {
 
 function buildMissingMockRecordSourceError(sourceName: string): Error {
   return new Error(
-    `Mock mode requires an actual SQLite table named ${normalizeSourceName(sourceName)} in DATABASE_URL-backed mock.db.`,
+    `Feature 1 requires an actual PostgreSQL table named ${normalizeSourceName(sourceName)} at DATABASE_URL.`,
   );
 }
 
@@ -67,13 +67,13 @@ export async function listQ360Records(
 ): Promise<Q360RecordListResult> {
   const normalizedSourceName = normalizeSourceName(sourceName);
 
-  if (isMockMode()) {
-    const sqliteResult = listMockRecordRows(normalizedSourceName, request);
-    if (!sqliteResult) {
+  if (hasFeature1PostgresDatabase()) {
+    const postgresResult = await listMockRecordRows(normalizedSourceName, request);
+    if (!postgresResult) {
       throw buildMissingMockRecordSourceError(normalizedSourceName);
     }
 
-    return sqliteResult;
+    return postgresResult;
   }
 
   const body = createRecordListBody(request);
@@ -111,6 +111,7 @@ export async function listAllQ360Records(
   let offset = request.offset ?? 0;
   let pageCount = 0;
   let hasMore = false;
+  let resolvedSourceName: string | null = null;
 
   while (pageCount < maxPages && rows.length < maxRows) {
     const page = await listQ360Records(sourceName, {
@@ -119,6 +120,7 @@ export async function listAllQ360Records(
       offset,
     });
 
+    resolvedSourceName = page.sourceName;
     rows.push(...page.rows.slice(0, Math.max(maxRows - rows.length, 0)));
     pageCount += 1;
     hasMore = page.hasMore;
@@ -135,6 +137,6 @@ export async function listAllQ360Records(
     limit,
     offset: request.offset ?? 0,
     rows,
-    sourceName: normalizeSourceName(sourceName),
+    sourceName: resolvedSourceName ?? normalizeSourceName(sourceName),
   };
 }

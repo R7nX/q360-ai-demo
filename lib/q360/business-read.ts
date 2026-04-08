@@ -10,6 +10,7 @@ import {
 } from "@/lib/domain/normalizers";
 import { listProjectRows, listTaskRows } from "@/lib/q360/list-actions";
 import {
+  listAllQ360Records,
   listQ360Records,
   type RecordListFilter,
   type RecordListOrderBy,
@@ -21,9 +22,18 @@ import {
 
 export type ProjectMonitorItem = Project & {
   atRisk: boolean;
+  detailExtendedCostTotal: number | null;
+  detailExtendedPriceTotal: number | null;
+  detailLineCount: number;
+  latestSnapshotAt: string | null;
   nextTaskDueDate: string | null;
   openTaskCount: number;
   overdueTaskCount: number;
+  siteName: string | null;
+  snapshotCostTotal: number | null;
+  snapshotGrossMargin: number | null;
+  snapshotGrossProfit: number | null;
+  snapshotRevenue: number | null;
   taskCount: number;
 };
 
@@ -44,6 +54,41 @@ export type BillingSummaryItem = BillingSnapshot & {
   projectTitle: string | null;
 };
 
+export type ProjectSnapshotItem = {
+  asOfDate: string | null;
+  costTotal: number | null;
+  customerName: string | null;
+  grossMargin: number | null;
+  grossProfit: number | null;
+  hours: number | null;
+  id: string;
+  ownerId: string | null;
+  projectId: string;
+  projectTitle: string | null;
+  revenue: number | null;
+  sourceName: string;
+  status: string | null;
+};
+
+export type ProjectDetailItem = {
+  contractItemNo: string | null;
+  cost: number | null;
+  description: string | null;
+  detailType: string | null;
+  extendedCost: number | null;
+  extendedPrice: number | null;
+  id: string;
+  itemType: string | null;
+  projectId: string | null;
+  projectTitle: string | null;
+  qty: number | null;
+  sourceName: string;
+  stagingLocation: string | null;
+  stagingDescription: string | null;
+  status: string | null;
+  wbs: string | null;
+};
+
 export type ProjectProgressResponse = {
   projects: ProjectMonitorItem[];
   sourceName: string;
@@ -55,6 +100,7 @@ export type ProjectProgressResponse = {
     withTaskBacklogCount: number;
   };
   taskSourceName: string;
+  warning: string | null;
 };
 
 export type FollowUpsResponse = {
@@ -67,6 +113,7 @@ export type FollowUpsResponse = {
     totalCount: number;
   };
   tasks: FollowUpItem[];
+  warning: string | null;
 };
 
 export type ActivityStreamResponse = {
@@ -91,6 +138,27 @@ export type BillingSummaryResponse = {
   };
 };
 
+export type ProjectSnapshotsResponse = {
+  snapshots: ProjectSnapshotItem[];
+  sourceName: string;
+  summary: {
+    marginAlertCount: number;
+    snapshotRevenueTotal: number | null;
+    totalCount: number;
+  };
+};
+
+export type ProjectDetailsResponse = {
+  details: ProjectDetailItem[];
+  sourceName: string;
+  summary: {
+    projectCount: number;
+    totalCount: number;
+    totalExtendedCost: number | null;
+    totalExtendedPrice: number | null;
+  };
+};
+
 export type BusinessOverviewResponse = {
   actionCenter: ActionCenterResponse;
   activityStream: ActivityStreamResponse | null;
@@ -98,22 +166,28 @@ export type BusinessOverviewResponse = {
   dataSources: {
     activity: string | null;
     billing: string | null;
+    detail: string | null;
     projects: string;
+    snapshots: string | null;
     tasks: string;
   };
   followUps: FollowUpsResponse;
   generatedAt: string;
+  projectDetails: ProjectDetailsResponse | null;
   projectProgress: ProjectProgressResponse;
+  projectSnapshots: ProjectSnapshotsResponse | null;
   summary: {
     activeProjectCount: number;
     atRiskProjectCount: number;
     billedHoursTotal: number | null;
+    detailLineCount: number | null;
     dueTodayTaskCount: number;
     highPriorityActionCount: number;
     overdueProjectCount: number;
     overdueTaskCount: number;
     recentActivityCount: number | null;
     recommendationCount: number;
+    snapshotRevenueTotal: number | null;
   };
   warnings: string[];
 };
@@ -121,6 +195,24 @@ export type BusinessOverviewResponse = {
 type ProjectLookupValue = {
   customerName: string | null;
   projectTitle: string | null;
+};
+
+type ProjectDirectoryItem = {
+  customerName: string | null;
+  id: string;
+  ownerId: string | null;
+  projectStartDate: string | null;
+  revenueBudget: number | null;
+  salesRepId: string | null;
+  siteName: string | null;
+  status: string | null;
+  title: string | null;
+};
+
+type ProjectDetailSummary = {
+  extendedCostTotal: number | null;
+  extendedPriceTotal: number | null;
+  lineCount: number;
 };
 
 type RecordSourcePlan<TItem> = {
@@ -141,12 +233,12 @@ const CLOSED_STATUSES = new Set([
 
 const projectFieldCandidates = {
   customerId: ["customerno"],
-  customerName: ["customer_company", "company"],
+  customerName: ["customer_company", "company", "customername"],
   dueDate: ["enddate", "duedate", "installdate"],
   endDate: ["enddate", "duedate", "installdate"],
   hoursBudget: ["hoursbudget", "budgethours"],
   id: ["projectno"],
-  lastActivityAt: ["moddate", "lastactivityat", "lastactivitydate"],
+  lastActivityAt: ["moddate", "lastactivityat", "lastactivitydate", "projectforecastdate"],
   ownerId: ["projectleader", "ownerid", "userid"],
   percentComplete: ["percentcomplete", "pctcomplete"],
   projectStartDate: ["projectstartdate"],
@@ -155,7 +247,7 @@ const projectFieldCandidates = {
   siteId: ["siteno", "siteid"],
   startDate: ["startdate"],
   status: ["statuscode", "status"],
-  title: ["title", "projecttitle"],
+  title: ["title", "projecttitle", "nickname"],
 } as const;
 
 const taskFieldCandidates = {
@@ -263,6 +355,81 @@ const billingSourcePlans: RecordSourcePlan<BillingSnapshot>[] = [
   },
 ];
 
+const projectDirectorySourcePlans: RecordSourcePlan<ProjectDirectoryItem>[] = [
+  {
+    columns: [
+      "PROJECTNO",
+      "TITLE",
+      "COMPANY",
+      "CUSTOMERNO",
+      "STATUSCODE",
+      "PROJECTLEADER",
+      "PROJECTLEADERNAME",
+      "SALESREP",
+      "SALESREPNAME",
+      "SITENAME",
+      "PROJECTSTARTDATE",
+      "REVENUEBUDGET",
+    ],
+    normalize: normalizeProjectDirectoryRows,
+    orderBy: [{ dir: "asc", field: "PROJECTNO" }],
+    sourceName: "LDVIEW_PROJECT",
+  },
+];
+
+const projectSnapshotSourcePlans: RecordSourcePlan<ProjectSnapshotItem>[] = [
+  {
+    columns: [
+      "ASOFDATE",
+      "CUSTOMERNAME",
+      "DGP",
+      "PROJECTLEADER",
+      "PROJECTNO",
+      "SNAPSHOTHOURS",
+      "SNAPSHOTLABCOST",
+      "SNAPSHOTMATCOST",
+      "SNAPSHOTMISCCOST",
+      "SNAPSHOTREVENUE",
+      "SNAPSHOTSUBCOST",
+      "STATUSCODE",
+      "TITLE",
+    ],
+    normalize: normalizeProjectSnapshotRows,
+    orderBy: [
+      { dir: "desc", field: "ASOFDATE" },
+      { dir: "asc", field: "PROJECTNO" },
+    ],
+    sourceName: "LDVIEW_PROJECTSNAPSHOT",
+  },
+];
+
+const projectDetailSourcePlans: RecordSourcePlan<ProjectDetailItem>[] = [
+  {
+    columns: [
+      "CONITEMNO",
+      "COST",
+      "DESCRIPTION",
+      "DETAILTYPE",
+      "EXTENDEDCOST",
+      "EXTENDEDPRICE",
+      "ITEMTYPE",
+      "PROJECTNO",
+      "QTY",
+      "STAGINGDESCRIPTION",
+      "STAGINGLOCATION",
+      "STATUSCODE",
+      "WBS",
+    ],
+    normalize: normalizeProjectDetailRows,
+    orderBy: [
+      { dir: "asc", field: "PROJECTNO" },
+      { dir: "asc", field: "WBS" },
+      { dir: "asc", field: "DESCRIPTION" },
+    ],
+    sourceName: "LDVIEW_PROJECTDETAIL",
+  },
+];
+
 function collectAvailableFields(rows: Q360RecordRow[]): string[] {
   const availableFields = new Set<string>();
 
@@ -273,6 +440,63 @@ function collectAvailableFields(rows: Q360RecordRow[]): string[] {
   }
 
   return Array.from(availableFields);
+}
+
+function getRowValue(row: Q360RecordRow, fieldName: string | undefined): unknown | null {
+  if (!fieldName) {
+    return null;
+  }
+
+  const directValue = row[fieldName];
+  if (directValue !== undefined) {
+    return directValue;
+  }
+
+  const lowerFieldName = fieldName.toLowerCase();
+  for (const [key, value] of Object.entries(row)) {
+    if (key.toLowerCase() === lowerFieldName) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function toStringOrNull(value: unknown): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const stringValue = String(value).trim();
+  return stringValue.length > 0 ? stringValue : null;
+}
+
+function toNumberOrNull(value: unknown): number | null {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const numericValue =
+    typeof value === "number" ? value : Number(String(value).replace(/,/g, ""));
+
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function roundToTwo(value: number | null): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  return Number(value.toFixed(2));
+}
+
+function sumNumbers(values: Array<number | null>): number | null {
+  const numericValues = values.filter((value): value is number => value !== null);
+  if (numericValues.length === 0) {
+    return null;
+  }
+
+  return roundToTwo(numericValues.reduce((total, value) => total + value, 0));
 }
 
 function isClosedStatus(status: string | null): boolean {
@@ -315,6 +539,10 @@ function compareNullableDate(left: string | null, right: string | null): number 
   return leftTime - rightTime;
 }
 
+function formatErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unexpected error.";
+}
+
 function normalizeProjectRows(rows: Q360RecordRow[], sourceName: string): Project[] {
   const fieldMap = resolveAvailableFields(
     collectAvailableFields(rows),
@@ -345,10 +573,7 @@ function normalizeTaskRows(rows: Q360RecordRow[], sourceName: string): FollowUpI
     .filter((task): task is FollowUpItem => task !== null);
 }
 
-function normalizeActivityRows(
-  rows: Q360RecordRow[],
-  sourceName: string,
-): Activity[] {
+function normalizeActivityRows(rows: Q360RecordRow[], sourceName: string): Activity[] {
   const fieldMap = resolveAvailableFields(
     collectAvailableFields(rows),
     activityFieldCandidates,
@@ -373,6 +598,127 @@ function normalizeBillingRows(
     .filter((entry): entry is BillingSnapshot => entry !== null);
 }
 
+function normalizeProjectDirectoryRows(
+  rows: Q360RecordRow[],
+  _sourceName: string,
+): ProjectDirectoryItem[] {
+  return rows
+    .map((row) => {
+      const id = toStringOrNull(getRowValue(row, "PROJECTNO"));
+      if (!id) {
+        return null;
+      }
+
+      return {
+        customerName:
+          toStringOrNull(getRowValue(row, "COMPANY")) ??
+          toStringOrNull(getRowValue(row, "CUSTOMERNAME")),
+        id,
+        ownerId:
+          toStringOrNull(getRowValue(row, "PROJECTLEADER")) ??
+          toStringOrNull(getRowValue(row, "PROJECTLEADERNAME")),
+        projectStartDate: toStringOrNull(getRowValue(row, "PROJECTSTARTDATE")),
+        revenueBudget: toNumberOrNull(getRowValue(row, "REVENUEBUDGET")),
+        salesRepId:
+          toStringOrNull(getRowValue(row, "SALESREP")) ??
+          toStringOrNull(getRowValue(row, "SALESREPNAME")),
+        siteName: toStringOrNull(getRowValue(row, "SITENAME")),
+        status: toStringOrNull(getRowValue(row, "STATUSCODE")),
+        title:
+          toStringOrNull(getRowValue(row, "TITLE")) ??
+          toStringOrNull(getRowValue(row, "NICKNAME")),
+      } satisfies ProjectDirectoryItem;
+    })
+    .filter((item): item is ProjectDirectoryItem => item !== null);
+}
+
+function normalizeProjectSnapshotRows(
+  rows: Q360RecordRow[],
+  sourceName: string,
+): ProjectSnapshotItem[] {
+  return rows
+    .map((row, index) => {
+      const projectId = toStringOrNull(getRowValue(row, "PROJECTNO"));
+      if (!projectId) {
+        return null;
+      }
+
+      const asOfDate = toStringOrNull(getRowValue(row, "ASOFDATE"));
+      const revenue = toNumberOrNull(getRowValue(row, "SNAPSHOTREVENUE"));
+      const costTotal = sumNumbers([
+        toNumberOrNull(getRowValue(row, "SNAPSHOTLABCOST")),
+        toNumberOrNull(getRowValue(row, "SNAPSHOTMATCOST")),
+        toNumberOrNull(getRowValue(row, "SNAPSHOTMISCCOST")),
+        toNumberOrNull(getRowValue(row, "SNAPSHOTSUBCOST")),
+      ]);
+      const grossProfit =
+        revenue !== null && costTotal !== null ? roundToTwo(revenue - costTotal) : null;
+      const grossMargin =
+        revenue !== null && revenue !== 0 && grossProfit !== null
+          ? roundToTwo((grossProfit / revenue) * 100)
+          : toNumberOrNull(getRowValue(row, "DGP"));
+
+      return {
+        asOfDate,
+        costTotal,
+        customerName: toStringOrNull(getRowValue(row, "CUSTOMERNAME")),
+        grossMargin,
+        grossProfit,
+        hours: toNumberOrNull(getRowValue(row, "SNAPSHOTHOURS")),
+        id: `${projectId}:${asOfDate ?? index}`,
+        ownerId: toStringOrNull(getRowValue(row, "PROJECTLEADER")),
+        projectId,
+        projectTitle: toStringOrNull(getRowValue(row, "TITLE")),
+        revenue,
+        sourceName,
+        status: toStringOrNull(getRowValue(row, "STATUSCODE")),
+      } satisfies ProjectSnapshotItem;
+    })
+    .filter((item): item is ProjectSnapshotItem => item !== null);
+}
+
+function normalizeProjectDetailRows(
+  rows: Q360RecordRow[],
+  sourceName: string,
+): ProjectDetailItem[] {
+  const details: ProjectDetailItem[] = [];
+
+  for (const [index, row] of rows.entries()) {
+    const projectId = toStringOrNull(getRowValue(row, "PROJECTNO"));
+    const description = toStringOrNull(getRowValue(row, "DESCRIPTION"));
+    const lineRef =
+      toStringOrNull(getRowValue(row, "CONITEMNO")) ??
+      toStringOrNull(getRowValue(row, "WBS")) ??
+      description ??
+      String(index);
+
+    if (!projectId && !description) {
+      continue;
+    }
+
+    details.push({
+      contractItemNo: toStringOrNull(getRowValue(row, "CONITEMNO")),
+      cost: toNumberOrNull(getRowValue(row, "COST")),
+      description,
+      detailType: toStringOrNull(getRowValue(row, "DETAILTYPE")),
+      extendedCost: toNumberOrNull(getRowValue(row, "EXTENDEDCOST")),
+      extendedPrice: toNumberOrNull(getRowValue(row, "EXTENDEDPRICE")),
+      id: `${projectId ?? "detail"}:${lineRef}`,
+      itemType: toStringOrNull(getRowValue(row, "ITEMTYPE")),
+      projectId,
+      projectTitle: null,
+      qty: toNumberOrNull(getRowValue(row, "QTY")),
+      sourceName,
+      stagingDescription: toStringOrNull(getRowValue(row, "STAGINGDESCRIPTION")),
+      stagingLocation: toStringOrNull(getRowValue(row, "STAGINGLOCATION")),
+      status: toStringOrNull(getRowValue(row, "STATUSCODE")),
+      wbs: toStringOrNull(getRowValue(row, "WBS")),
+    });
+  }
+
+  return details;
+}
+
 function sortTasks(tasks: FollowUpItem[]): FollowUpItem[] {
   return [...tasks].sort((left, right) => {
     if (left.isOverdue !== right.isOverdue) {
@@ -392,7 +738,72 @@ function sortTasks(tasks: FollowUpItem[]): FollowUpItem[] {
   });
 }
 
-function enrichProjects(projects: Project[], tasks: FollowUpItem[]): ProjectMonitorItem[] {
+function buildProjectDirectoryMap(
+  projectDirectoryItems: ProjectDirectoryItem[],
+): Map<string, ProjectDirectoryItem> {
+  return new Map(projectDirectoryItems.map((item) => [item.id, item]));
+}
+
+function buildProjectSnapshotMap(
+  projectSnapshots: ProjectSnapshotItem[],
+): Map<string, ProjectSnapshotItem> {
+  const snapshotMap = new Map<string, ProjectSnapshotItem>();
+
+  for (const snapshot of projectSnapshots) {
+    const currentValue = snapshotMap.get(snapshot.projectId);
+    if (
+      !currentValue ||
+      compareNullableDate(currentValue.asOfDate, snapshot.asOfDate) < 0
+    ) {
+      snapshotMap.set(snapshot.projectId, snapshot);
+    }
+  }
+
+  return snapshotMap;
+}
+
+function buildProjectDetailSummaryMap(
+  projectDetails: ProjectDetailItem[],
+): Map<string, ProjectDetailSummary> {
+  const detailSummaryMap = new Map<string, ProjectDetailSummary>();
+
+  for (const detail of projectDetails) {
+    if (!detail.projectId) {
+      continue;
+    }
+
+    const currentValue = detailSummaryMap.get(detail.projectId) ?? {
+      extendedCostTotal: null,
+      extendedPriceTotal: null,
+      lineCount: 0,
+    };
+
+    const nextExtendedCostTotal = sumNumbers([
+      currentValue.extendedCostTotal,
+      detail.extendedCost,
+    ]);
+    const nextExtendedPriceTotal = sumNumbers([
+      currentValue.extendedPriceTotal,
+      detail.extendedPrice,
+    ]);
+
+    detailSummaryMap.set(detail.projectId, {
+      extendedCostTotal: nextExtendedCostTotal,
+      extendedPriceTotal: nextExtendedPriceTotal,
+      lineCount: currentValue.lineCount + 1,
+    });
+  }
+
+  return detailSummaryMap;
+}
+
+function enrichProjects(
+  projects: Project[],
+  tasks: FollowUpItem[],
+  projectDirectoryMap: Map<string, ProjectDirectoryItem>,
+  projectSnapshotMap: Map<string, ProjectSnapshotItem>,
+  projectDetailSummaryMap: Map<string, ProjectDetailSummary>,
+): ProjectMonitorItem[] {
   const tasksByProject = new Map<string, FollowUpItem[]>();
 
   for (const task of tasks) {
@@ -414,15 +825,37 @@ function enrichProjects(projects: Project[], tasks: FollowUpItem[]): ProjectMoni
         [...openTasks]
           .sort((left, right) => compareNullableDate(left.dueDate, right.dueDate))[0]
           ?.dueDate ?? null;
-      const projectIsOverdue = isOverdue(project.dueDate, project.status);
+      const projectDirectory = projectDirectoryMap.get(project.id);
+      const latestSnapshot = projectSnapshotMap.get(project.id);
+      const detailSummary = projectDetailSummaryMap.get(project.id);
+      const projectIsOverdue = isOverdue(project.dueDate ?? project.endDate, project.status);
+      const snapshotMarginRisk =
+        latestSnapshot?.grossProfit != null && latestSnapshot.grossProfit < 0;
 
       return {
         ...project,
-        atRisk: projectIsOverdue || overdueTaskCount > 0,
+        atRisk: projectIsOverdue || overdueTaskCount > 0 || snapshotMarginRisk,
+        customerName: project.customerName ?? projectDirectory?.customerName ?? latestSnapshot?.customerName ?? null,
+        detailExtendedCostTotal: detailSummary?.extendedCostTotal ?? null,
+        detailExtendedPriceTotal: detailSummary?.extendedPriceTotal ?? null,
+        detailLineCount: detailSummary?.lineCount ?? 0,
+        lastActivityAt: project.lastActivityAt ?? latestSnapshot?.asOfDate ?? null,
+        latestSnapshotAt: latestSnapshot?.asOfDate ?? null,
         nextTaskDueDate,
         openTaskCount: openTasks.length,
         overdueTaskCount,
+        ownerId: project.ownerId ?? projectDirectory?.ownerId ?? latestSnapshot?.ownerId ?? null,
+        projectStartDate: project.projectStartDate ?? projectDirectory?.projectStartDate ?? null,
+        revenueBudget: project.revenueBudget ?? projectDirectory?.revenueBudget ?? null,
+        salesRepId: project.salesRepId ?? projectDirectory?.salesRepId ?? null,
+        siteName: projectDirectory?.siteName ?? null,
+        snapshotCostTotal: latestSnapshot?.costTotal ?? null,
+        snapshotGrossMargin: latestSnapshot?.grossMargin ?? null,
+        snapshotGrossProfit: latestSnapshot?.grossProfit ?? null,
+        snapshotRevenue: latestSnapshot?.revenue ?? null,
+        status: project.status ?? projectDirectory?.status ?? latestSnapshot?.status ?? null,
         taskCount: linkedTasks.length,
+        title: project.title ?? projectDirectory?.title ?? latestSnapshot?.projectTitle ?? null,
       } satisfies ProjectMonitorItem;
     })
     .sort((left, right) => {
@@ -431,13 +864,13 @@ function enrichProjects(projects: Project[], tasks: FollowUpItem[]): ProjectMoni
       }
 
       const overdueComparison =
-        Number(isOverdue(left.dueDate, left.status)) -
-        Number(isOverdue(right.dueDate, right.status));
+        Number(isOverdue(left.dueDate ?? left.endDate, left.status)) -
+        Number(isOverdue(right.dueDate ?? right.endDate, right.status));
       if (overdueComparison !== 0) {
         return overdueComparison * -1;
       }
 
-      const dateComparison = compareNullableDate(left.dueDate, right.dueDate);
+      const dateComparison = compareNullableDate(left.dueDate ?? left.endDate, right.dueDate ?? right.endDate);
       if (dateComparison !== 0) {
         return dateComparison;
       }
@@ -490,10 +923,35 @@ function enrichBillingEntries(
   });
 }
 
+function enrichProjectDetails(
+  details: ProjectDetailItem[],
+  projectLookup: Map<string, ProjectLookupValue>,
+): ProjectDetailItem[] {
+  return details.map((detail) => {
+    const projectContext = detail.projectId ? projectLookup.get(detail.projectId) : undefined;
+
+    return {
+      ...detail,
+      projectTitle: projectContext?.projectTitle ?? null,
+    };
+  });
+}
+
 async function getProjectLookup(): Promise<Map<string, ProjectLookupValue>> {
-  const projectResult = await listProjectRows();
+  const [projectResult, projectDirectoryLoad] = await Promise.all([
+    listProjectRows(),
+    tryReadAllBusinessRecords(projectDirectorySourcePlans, 250),
+  ]);
   const projects = normalizeProjectRows(projectResult.rows, projectResult.sourceName);
-  return buildProjectLookup(projects);
+  const enrichedProjects = enrichProjects(
+    projects,
+    [],
+    buildProjectDirectoryMap(projectDirectoryLoad.items),
+    new Map<string, ProjectSnapshotItem>(),
+    new Map<string, ProjectDetailSummary>(),
+  );
+
+  return buildProjectLookup(enrichedProjects);
 }
 
 async function readBusinessRecords<TItem>(
@@ -527,6 +985,58 @@ async function readBusinessRecords<TItem>(
   throw firstError ?? new Error("No readable Q360 business source was found.");
 }
 
+async function readAllBusinessRecords<TItem>(
+  plans: RecordSourcePlan<TItem>[],
+  maxRows: number,
+): Promise<{ items: TItem[]; sourceName: string }> {
+  let firstError: unknown = null;
+
+  for (const plan of plans) {
+    try {
+      const result = await listAllQ360Records(plan.sourceName, {
+        columns: plan.columns,
+        filters: plan.filters,
+        limit: 50,
+        maxPages: Math.max(1, Math.ceil(maxRows / 50)),
+        maxRows,
+        offset: 0,
+        orderBy: plan.orderBy,
+      });
+
+      return {
+        items: plan.normalize(result.rows, result.sourceName),
+        sourceName: result.sourceName,
+      };
+    } catch (error) {
+      if (!firstError) {
+        firstError = error;
+      }
+    }
+  }
+
+  throw firstError ?? new Error("No readable Q360 business source was found.");
+}
+
+async function tryReadAllBusinessRecords<TItem>(
+  plans: RecordSourcePlan<TItem>[],
+  maxRows: number,
+): Promise<{ items: TItem[]; sourceName: string | null; warning: string | null }> {
+  try {
+    const result = await readAllBusinessRecords(plans, maxRows);
+    return {
+      items: result.items,
+      sourceName: result.sourceName,
+      warning: null,
+    };
+  } catch (error) {
+    return {
+      items: [],
+      sourceName: null,
+      warning: formatErrorMessage(error),
+    };
+  }
+}
+
 async function loadOptionalSection<TSection>(
   label: string,
   loader: () => Promise<TSection>,
@@ -537,7 +1047,7 @@ async function loadOptionalSection<TSection>(
       warning: null,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unexpected error.";
+    const message = formatErrorMessage(error);
     return {
       data: null,
       warning: `${label} unavailable: ${message}`,
@@ -545,12 +1055,45 @@ async function loadOptionalSection<TSection>(
   }
 }
 
+async function loadTaskContext(): Promise<{
+  sourceName: string;
+  tasks: FollowUpItem[];
+  warning: string | null;
+}> {
+  try {
+    const taskResult = await listTaskRows();
+    return {
+      sourceName: taskResult.sourceName,
+      tasks: normalizeTaskRows(taskResult.rows, taskResult.sourceName),
+      warning: null,
+    };
+  } catch (error) {
+    return {
+      sourceName: "Unavailable",
+      tasks: [],
+      warning: `Project task data unavailable: ${formatErrorMessage(error)}`,
+    };
+  }
+}
+
 export async function getProjectProgress(limit = 12): Promise<ProjectProgressResponse> {
-  const [projectResult, taskResult] = await Promise.all([listProjectRows(), listTaskRows()]);
+  const [projectResult, taskContext, projectDirectoryLoad, projectSnapshotLoad, projectDetailLoad] =
+    await Promise.all([
+      listProjectRows(),
+      loadTaskContext(),
+      tryReadAllBusinessRecords(projectDirectorySourcePlans, 250),
+      tryReadAllBusinessRecords(projectSnapshotSourcePlans, 250),
+      tryReadAllBusinessRecords(projectDetailSourcePlans, 250),
+    ]);
 
   const projects = normalizeProjectRows(projectResult.rows, projectResult.sourceName);
-  const tasks = normalizeTaskRows(taskResult.rows, taskResult.sourceName);
-  const enrichedProjects = enrichProjects(projects, tasks);
+  const enrichedProjects = enrichProjects(
+    projects,
+    taskContext.tasks,
+    buildProjectDirectoryMap(projectDirectoryLoad.items),
+    buildProjectSnapshotMap(projectSnapshotLoad.items),
+    buildProjectDetailSummaryMap(projectDetailLoad.items),
+  );
   const limitedProjects = enrichedProjects.slice(0, Math.max(1, limit));
 
   return {
@@ -560,24 +1103,24 @@ export async function getProjectProgress(limit = 12): Promise<ProjectProgressRes
       activeCount: enrichedProjects.filter((project) => !isClosedStatus(project.status)).length,
       atRiskCount: enrichedProjects.filter((project) => project.atRisk).length,
       overdueCount: enrichedProjects.filter((project) =>
-        isOverdue(project.dueDate, project.status),
+        isOverdue(project.dueDate ?? project.endDate, project.status),
       ).length,
       totalCount: enrichedProjects.length,
       withTaskBacklogCount: enrichedProjects.filter((project) => project.openTaskCount > 0)
         .length,
     },
-    taskSourceName: taskResult.sourceName,
+    taskSourceName: taskContext.sourceName,
+    warning: taskContext.warning,
   };
 }
 
 export async function getFollowUps(limit = 12): Promise<FollowUpsResponse> {
-  const taskResult = await listTaskRows();
-  const tasks = normalizeTaskRows(taskResult.rows, taskResult.sourceName);
-  const openTasks = sortTasks(tasks.filter((task) => !isClosedStatus(task.status)));
+  const taskContext = await loadTaskContext();
+  const openTasks = sortTasks(taskContext.tasks.filter((task) => !isClosedStatus(task.status)));
   const limitedTasks = openTasks.slice(0, Math.max(1, limit));
 
   return {
-    sourceName: taskResult.sourceName,
+    sourceName: taskContext.sourceName,
     summary: {
       dueTodayCount: openTasks.filter((task) => task.isDueToday).length,
       linkedProjectCount: new Set(
@@ -590,6 +1133,7 @@ export async function getFollowUps(limit = 12): Promise<FollowUpsResponse> {
       totalCount: openTasks.length,
     },
     tasks: limitedTasks,
+    warning: taskContext.warning,
   };
 }
 
@@ -660,17 +1204,72 @@ export async function getBillingSummary(limit = 12): Promise<BillingSummaryRespo
   };
 }
 
+export async function getProjectSnapshots(
+  limit = 12,
+): Promise<ProjectSnapshotsResponse> {
+  const { items, sourceName } = await readAllBusinessRecords(projectSnapshotSourcePlans, 250);
+  const snapshots = [...items]
+    .sort((left, right) => compareNullableDate(right.asOfDate, left.asOfDate))
+    .slice(0, Math.max(1, limit));
+
+  return {
+    snapshots,
+    sourceName,
+    summary: {
+      marginAlertCount: items.filter((snapshot) =>
+        snapshot.grossMargin !== null ? snapshot.grossMargin < 15 : false,
+      ).length,
+      snapshotRevenueTotal: sumNumbers(items.map((snapshot) => snapshot.revenue)),
+      totalCount: items.length,
+    },
+  };
+}
+
+export async function getProjectDetails(
+  limit = 12,
+): Promise<ProjectDetailsResponse> {
+  const [{ items, sourceName }, projectLookup] = await Promise.all([
+    readAllBusinessRecords(projectDetailSourcePlans, 250),
+    getProjectLookup(),
+  ]);
+  const details = enrichProjectDetails(items, projectLookup).slice(0, Math.max(1, limit));
+
+  return {
+    details,
+    sourceName,
+    summary: {
+      projectCount: new Set(
+        items
+          .map((detail) => detail.projectId)
+          .filter((projectId): projectId is string => Boolean(projectId)),
+      ).size,
+      totalCount: items.length,
+      totalExtendedCost: sumNumbers(items.map((detail) => detail.extendedCost)),
+      totalExtendedPrice: sumNumbers(items.map((detail) => detail.extendedPrice)),
+    },
+  };
+}
+
 export async function getBusinessOverview(
   options: {
     agendaLimit?: number;
     activityLimit?: number;
     billingLimit?: number;
+    detailLimit?: number;
     projectLimit?: number;
     recommendationLimit?: number;
+    snapshotLimit?: number;
     taskLimit?: number;
   } = {},
 ): Promise<BusinessOverviewResponse> {
-  const [projectProgress, followUps, activityStream, billingSummary] = await Promise.all([
+  const [
+    projectProgress,
+    followUps,
+    activityStream,
+    billingSummary,
+    projectSnapshots,
+    projectDetails,
+  ] = await Promise.all([
     getProjectProgress(options.projectLimit ?? 8),
     getFollowUps(options.taskLimit ?? 8),
     loadOptionalSection("Project activity stream", () =>
@@ -679,10 +1278,25 @@ export async function getBusinessOverview(
     loadOptionalSection("Billing summary", () =>
       getBillingSummary(options.billingLimit ?? 8),
     ),
+    loadOptionalSection("Project snapshots", () =>
+      getProjectSnapshots(options.snapshotLimit ?? 8),
+    ),
+    loadOptionalSection("Project detail lines", () =>
+      getProjectDetails(options.detailLimit ?? 8),
+    ),
   ]);
 
-  const warnings = [activityStream.warning, billingSummary.warning].filter(
-    (warning): warning is string => Boolean(warning),
+  const warnings = Array.from(
+    new Set(
+      [
+        projectProgress.warning,
+        followUps.warning,
+        activityStream.warning,
+        billingSummary.warning,
+        projectSnapshots.warning,
+        projectDetails.warning,
+      ].filter((warning): warning is string => Boolean(warning)),
+    ),
   );
   const actionCenter = buildActionCenter(
     {
@@ -704,22 +1318,28 @@ export async function getBusinessOverview(
     dataSources: {
       activity: activityStream.data?.sourceName ?? null,
       billing: billingSummary.data?.sourceName ?? null,
+      detail: projectDetails.data?.sourceName ?? null,
       projects: projectProgress.sourceName,
+      snapshots: projectSnapshots.data?.sourceName ?? null,
       tasks: followUps.sourceName,
     },
     followUps,
     generatedAt: new Date().toISOString(),
+    projectDetails: projectDetails.data,
     projectProgress,
+    projectSnapshots: projectSnapshots.data,
     summary: {
       activeProjectCount: projectProgress.summary.activeCount,
       atRiskProjectCount: projectProgress.summary.atRiskCount,
       billedHoursTotal: billingSummary.data?.summary.totalHoursBilled ?? null,
+      detailLineCount: projectDetails.data?.summary.totalCount ?? null,
       dueTodayTaskCount: followUps.summary.dueTodayCount,
       highPriorityActionCount: actionCenter.summary.highPriorityCount,
       overdueProjectCount: projectProgress.summary.overdueCount,
       overdueTaskCount: followUps.summary.overdueTaskCount,
       recentActivityCount: activityStream.data?.summary.totalCount ?? null,
       recommendationCount: actionCenter.summary.recommendationCount,
+      snapshotRevenueTotal: projectSnapshots.data?.summary.snapshotRevenueTotal ?? null,
     },
     warnings,
   };

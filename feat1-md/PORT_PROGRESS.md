@@ -29,9 +29,11 @@ Current verified status on the master feature branch:
 - `/api/feature1/overview` exists
 - `/api/feature1/projects` exists
 - `/api/feature1/tasks` exists
+- `/api/feature1/snapshots` exists
+- `/api/feature1/details` exists
 - Team 1 Q360 adapter accepts the master repo's `Q360_API_USERNAME` env style
 - Team 1 schema is unified as a manager-facing superset in the master repo
-- Team 1 mock mode now prefers SQLite rows from `mock.db`
+- Team 1 now prefers PostgreSQL rows from `DATABASE_URL` whenever it is a PostgreSQL connection string
 
 Important limitation:
 
@@ -85,6 +87,8 @@ Added feature-scoped Team 1 routes instead of copying the old `/api/business/*` 
 - `app/api/feature1/overview/route.ts`
 - `app/api/feature1/projects/route.ts`
 - `app/api/feature1/tasks/route.ts`
+- `app/api/feature1/snapshots/route.ts`
+- `app/api/feature1/details/route.ts`
 
 Decision:
 
@@ -170,16 +174,16 @@ Result:
 - current Team 1 implementation docs now live in the master repo
 - active Team 1 development no longer depends on donor-only markdown files
 
-### Stage 10 — SQLite-backed Team 1 mock mode
+### Stage 10 — PostgreSQL-backed Team 1 data path
 
 Completed.
 
 Result:
 
-- Team 1 mock mode now reads compatible manager data from `mock.db`
-- `USE_MOCK_DATA` is now the primary Team 1 mock switch
-- Team 1 mock mode now requires actual compatible SQLite tables and no longer falls back to bundled row fixtures
-- seed scripts and runtime readers now resolve the same SQLite path via `DATABASE_URL`
+- Team 1 now reads compatible manager data from PostgreSQL when `DATABASE_URL` points to Postgres
+- Team 1 runtime no longer depends on `USE_MOCK_DATA`
+- Team 1 now requires actual compatible PostgreSQL tables and no longer falls back to bundled row fixtures
+- current Feature 1 project rendering is built around `PROJECTS`, `LDVIEW_PROJECT`, `LDVIEW_PROJECTSNAPSHOT`, and `LDVIEW_PROJECTDETAIL`
 
 ## Current implementation decisions
 
@@ -224,16 +228,19 @@ The first Team 1 slice in master is still centered on:
 
 Service, sales, accounting, invoices, profitability, and broader commercial views remain staged.
 
-### Decision 5 — SQLite is the primary Team 1 mock backend
+### Decision 5 — PostgreSQL is the primary Team 1 mock backend
 
-When mock mode is enabled, Team 1 now prefers:
+When `DATABASE_URL` points to PostgreSQL, Team 1 now prefers:
 
-- `projects`
-- `projectschedule`
-- optional `projectevents`
-- optional `timebill`
+- `PROJECTS`
+- `LDVIEW_PROJECT`
+- `LDVIEW_PROJECTSNAPSHOT`
+- `LDVIEW_PROJECTDETAIL`
+- optional `PROJECTSCHEDULE`
+- optional `PROJECTEVENTS`
+- optional `TIMEBILL`
 
-from `mock.db`.
+from `DATABASE_URL`.
 
 ## What is verified vs not yet verified
 
