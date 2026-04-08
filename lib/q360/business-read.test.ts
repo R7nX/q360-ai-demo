@@ -1,306 +1,506 @@
-import Database from "better-sqlite3";
-import fs from "fs";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import os from "os";
-import path from "path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+
+type MockPgTable = {
+  rows: Record<string, unknown>[];
+  schemaName?: string;
+  tableName: string;
+};
+
+const mockPgTables = new Map<string, MockPgTable>();
+
+function buildMockPgTableKey(tableName: string, schemaName = "public"): string {
+  return `${schemaName}.${tableName}`.toUpperCase();
+}
+
+function setMockPgTables(tables: MockPgTable[]): void {
+  mockPgTables.clear();
+
+  for (const table of tables) {
+    mockPgTables.set(
+      buildMockPgTableKey(table.tableName, table.schemaName),
+      {
+        rows: table.rows.map((row) => ({ ...row })),
+        schemaName: table.schemaName ?? "public",
+        tableName: table.tableName,
+      },
+    );
+  }
+}
+
+function seedFeature1PostgresTables(): void {
+  setMockPgTables([
+    {
+      tableName: "projects",
+      rows: [
+        {
+          CUSTOMERNO: "C10025",
+          ENDDATE: "2026-03-28 00:00:00.000",
+          HOURSBUDGET: "120",
+          PERCENTCOMPLETE: "72",
+          PROJECTLEADER: "JMILLER",
+          PROJECTNO: "P-1001",
+          PROJECTSTARTDATE: "2026-02-03 00:00:00.000",
+          PROJECTFORECASTDATE: "2026-03-20 14:15:00.000",
+          REVENUEBUDGET: "85000",
+          SALESREP: "JMILLER",
+          SITENO: "S-1001",
+          STARTDATE: "2026-02-10 00:00:00.000",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Campus AV Refresh",
+        },
+        {
+          CUSTOMERNO: "C10026",
+          ENDDATE: "2026-03-18 00:00:00.000",
+          HOURSBUDGET: "96",
+          PERCENTCOMPLETE: "58",
+          PROJECTLEADER: "RLEE",
+          PROJECTNO: "P-1002",
+          PROJECTSTARTDATE: "2026-01-15 00:00:00.000",
+          PROJECTFORECASTDATE: "2026-03-01 09:00:00.000",
+          REVENUEBUDGET: "64000",
+          SALESREP: "RLEE",
+          SITENO: "S-1002",
+          STARTDATE: "2026-01-22 00:00:00.000",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Clinic Exam Room Expansion",
+        },
+        {
+          CUSTOMERNO: "C10027",
+          ENDDATE: "2026-04-11 00:00:00.000",
+          HOURSBUDGET: "140",
+          PERCENTCOMPLETE: "22",
+          PROJECTLEADER: "KADAMS",
+          PROJECTNO: "P-1003",
+          PROJECTSTARTDATE: "2026-02-25 00:00:00.000",
+          PROJECTFORECASTDATE: "2026-03-22 16:40:00.000",
+          REVENUEBUDGET: "132000",
+          SALESREP: "KADAMS",
+          SITENO: "S-1003",
+          STARTDATE: "2026-03-02 00:00:00.000",
+          STATUSCODE: "PLANNING",
+          TITLE: "Council Chamber Modernization",
+        },
+      ],
+    },
+    {
+      tableName: "ldview_project",
+      rows: [
+        {
+          COMPANY: "North Peak University",
+          CUSTOMERNO: "C10025",
+          ENDDATE: "2026-03-28 00:00:00.000",
+          PERCENTCOMPLETE: "72",
+          PROJECTLEADER: "JMILLER",
+          PROJECTNO: "P-1001",
+          REVENUEBUDGET: "85000",
+          SALESREP: "JMILLER",
+          SITENAME: "North Peak Main Campus",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Campus AV Refresh",
+        },
+        {
+          COMPANY: "Summit Health",
+          CUSTOMERNO: "C10026",
+          ENDDATE: "2026-03-18 00:00:00.000",
+          PERCENTCOMPLETE: "58",
+          PROJECTLEADER: "RLEE",
+          PROJECTNO: "P-1002",
+          REVENUEBUDGET: "64000",
+          SALESREP: "RLEE",
+          SITENAME: "Summit Clinic East",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Clinic Exam Room Expansion",
+        },
+        {
+          COMPANY: "City of Fairfield",
+          CUSTOMERNO: "C10027",
+          ENDDATE: "2026-04-11 00:00:00.000",
+          PERCENTCOMPLETE: "22",
+          PROJECTLEADER: "KADAMS",
+          PROJECTNO: "P-1003",
+          REVENUEBUDGET: "132000",
+          SALESREP: "KADAMS",
+          SITENAME: "Fairfield Council Chambers",
+          STATUSCODE: "PLANNING",
+          TITLE: "Council Chamber Modernization",
+        },
+      ],
+    },
+    {
+      tableName: "ldview_projectsnapshot",
+      rows: [
+        {
+          ASOFDATE: "2026-03-23 00:00:00.000",
+          CUSTOMERNAME: "North Peak University",
+          PROJECTLEADER: "JMILLER",
+          PROJECTNO: "P-1001",
+          SNAPSHOTHOURS: "88",
+          SNAPSHOTLABCOST: "18000",
+          SNAPSHOTMATCOST: "24000",
+          SNAPSHOTMISCCOST: "2000",
+          SNAPSHOTREVENUE: "71000",
+          SNAPSHOTSUBCOST: "7000",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Campus AV Refresh",
+        },
+        {
+          ASOFDATE: "2026-03-22 00:00:00.000",
+          CUSTOMERNAME: "Summit Health",
+          PROJECTLEADER: "RLEE",
+          PROJECTNO: "P-1002",
+          SNAPSHOTHOURS: "60",
+          SNAPSHOTLABCOST: "28000",
+          SNAPSHOTMATCOST: "25000",
+          SNAPSHOTMISCCOST: "3000",
+          SNAPSHOTREVENUE: "54000",
+          SNAPSHOTSUBCOST: "6000",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Clinic Exam Room Expansion",
+        },
+        {
+          ASOFDATE: "2026-03-22 00:00:00.000",
+          CUSTOMERNAME: "City of Fairfield",
+          PROJECTLEADER: "KADAMS",
+          PROJECTNO: "P-1003",
+          SNAPSHOTHOURS: "24",
+          SNAPSHOTLABCOST: "12000",
+          SNAPSHOTMATCOST: "8000",
+          SNAPSHOTMISCCOST: "1500",
+          SNAPSHOTREVENUE: "41000",
+          SNAPSHOTSUBCOST: "4000",
+          STATUSCODE: "PLANNING",
+          TITLE: "Council Chamber Modernization",
+        },
+      ],
+    },
+    {
+      tableName: "ldview_projectdetail",
+      rows: [
+        {
+          CONITEMNO: "CI-1001",
+          COST: "1200",
+          DESCRIPTION: "Display package",
+          DETAILTYPE: "EQUIPMENT",
+          EXTENDEDCOST: "2400",
+          EXTENDEDPRICE: "3600",
+          ITEMTYPE: "MATERIAL",
+          PROJECTNO: "P-1001",
+          QTY: "2",
+          STAGINGLOCATION: "Warehouse A",
+          STATUSCODE: "ACTIVE",
+          WBS: "1.2.0",
+        },
+        {
+          CONITEMNO: "CI-1002",
+          COST: "950",
+          DESCRIPTION: "Exam room audio package",
+          DETAILTYPE: "EQUIPMENT",
+          EXTENDEDCOST: "3800",
+          EXTENDEDPRICE: "5200",
+          ITEMTYPE: "MATERIAL",
+          PROJECTNO: "P-1002",
+          QTY: "4",
+          STAGINGLOCATION: "Clinic staging",
+          STATUSCODE: "ACTIVE",
+          WBS: "2.1.0",
+        },
+        {
+          CONITEMNO: "CI-1003",
+          COST: "1800",
+          DESCRIPTION: "Council chamber control system",
+          DETAILTYPE: "SYSTEM",
+          EXTENDEDCOST: "5400",
+          EXTENDEDPRICE: "7600",
+          ITEMTYPE: "MATERIAL",
+          PROJECTNO: "P-1003",
+          QTY: "3",
+          STAGINGLOCATION: "Municipal storage",
+          STATUSCODE: "PLANNING",
+          WBS: "3.3.0",
+        },
+      ],
+    },
+    {
+      tableName: "projectschedule",
+      rows: [
+        {
+          ASSIGNEE: "JMILLER",
+          ENDDATE: "2026-03-19 00:00:00.000",
+          EFFORT: "6.5",
+          MODDATE: "2026-03-18 13:10:00.000",
+          PRIORITY: "HIGH",
+          PROJECTNO: "P-1001",
+          PROJECTPERCENTCOMPLETE: "72",
+          PROJECTSCHEDULENO: "TS-1001",
+          PROJECTTITLE: "Campus AV Refresh",
+          SCHED: "Waiting on final client sign-off before procurement can start.",
+          SCHEDDATE: "2026-03-17 00:00:00.000",
+          SEQ: "10",
+          STATUSCODE: "INPROGRESS",
+          TASKPERCENTCOMPLETE: "48",
+          TITLE: "Secure procurement approval",
+          WBS: "1.1.0",
+        },
+        {
+          ASSIGNEE: "RLEE",
+          ENDDATE: "2026-03-24 00:00:00.000",
+          EFFORT: "3.0",
+          MODDATE: "2026-03-23 15:45:00.000",
+          PRIORITY: "MEDIUM",
+          PROJECTNO: "P-1002",
+          PROJECTPERCENTCOMPLETE: "58",
+          PROJECTSCHEDULENO: "TS-1002",
+          PROJECTTITLE: "Clinic Exam Room Expansion",
+          SCHED: "Finance needs revised margin worksheet.",
+          SCHEDDATE: "2026-03-23 00:00:00.000",
+          SEQ: "20",
+          STATUSCODE: "NOTSTARTED",
+          TASKPERCENTCOMPLETE: "0",
+          TITLE: "Update margin worksheet",
+          WBS: "2.4.0",
+        },
+        {
+          ASSIGNEE: "KADAMS",
+          ENDDATE: "2026-03-25 00:00:00.000",
+          EFFORT: "2.0",
+          MODDATE: "2026-03-22 11:30:00.000",
+          PRIORITY: "LOW",
+          PROJECTNO: "P-1003",
+          PROJECTPERCENTCOMPLETE: "22",
+          PROJECTSCHEDULENO: "TS-1003",
+          PROJECTTITLE: "Council Chamber Modernization",
+          SCHED: "Awaiting customer confirmation on room counts.",
+          SCHEDDATE: "2026-03-24 00:00:00.000",
+          SEQ: "30",
+          STATUSCODE: "WAITING",
+          TASKPERCENTCOMPLETE: "15",
+          TITLE: "Confirm room counts",
+          WBS: "3.2.1",
+        },
+      ],
+    },
+    {
+      tableName: "projectevents",
+      rows: [
+        {
+          COMMENT: "Client approved revised project plan.",
+          DATE: "2026-03-21 10:30:00.000",
+          PROJECTNO: "P-1001",
+          PROJEVENTNO: "EV-1001",
+          TYPE: "NOTE",
+          USERID: "JMILLER",
+        },
+        {
+          COMMENT: "Billing review flagged missing labor markup.",
+          DATE: "2026-03-18 15:10:00.000",
+          PROJECTNO: "P-1002",
+          PROJEVENTNO: "EV-1002",
+          TYPE: "FINANCE",
+          USERID: "RLEE",
+        },
+        {
+          COMMENT: "Sales handoff package sent to PM.",
+          DATE: "2026-03-22 08:45:00.000",
+          PROJECTNO: "P-1003",
+          PROJEVENTNO: "EV-1003",
+          TYPE: "HANDOFF",
+          USERID: "KADAMS",
+        },
+      ],
+    },
+    {
+      tableName: "timebill",
+      rows: [
+        {
+          CATEGORY: "LABOR",
+          CUSTOMERNO: "C10025",
+          DATE: "2026-03-21 16:00:00.000",
+          DESCRIPTION: "Rack integration and testing",
+          PROJECTNO: "P-1001",
+          TIMEBILLED: "5.5",
+          TIMEBILLNO: "TB-1001",
+        },
+        {
+          CATEGORY: "LABOR",
+          CUSTOMERNO: "C10026",
+          DATE: "2026-03-20 11:15:00.000",
+          DESCRIPTION: "Site walk and pricing update",
+          PROJECTNO: "P-1002",
+          TIMEBILLED: "3.0",
+          TIMEBILLNO: "TB-1002",
+        },
+        {
+          CATEGORY: "ENGINEERING",
+          CUSTOMERNO: "C10027",
+          DATE: "2026-03-22 17:00:00.000",
+          DESCRIPTION: "Design package revision",
+          PROJECTNO: "P-1003",
+          TIMEBILLED: "4.25",
+          TIMEBILLNO: "TB-1003",
+        },
+      ],
+    },
+  ]);
+}
+
+function seedProjectOnlyFeature1Tables(): void {
+  setMockPgTables([
+    {
+      tableName: "projects",
+      rows: [
+        {
+          CUSTOMERNO: "C10025",
+          ENDDATE: "2026-03-28 00:00:00.000",
+          HOURSBUDGET: "120",
+          PERCENTCOMPLETE: "72",
+          PROJECTLEADER: "JMILLER",
+          PROJECTNO: "P-1001",
+          PROJECTSTARTDATE: "2026-02-03 00:00:00.000",
+          PROJECTFORECASTDATE: "2026-03-20 14:15:00.000",
+          REVENUEBUDGET: "85000",
+          SALESREP: "JMILLER",
+          SITENO: "S-1001",
+          STARTDATE: "2026-02-10 00:00:00.000",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Campus AV Refresh",
+        },
+      ],
+    },
+    {
+      tableName: "ldview_project",
+      rows: [
+        {
+          COMPANY: "North Peak University",
+          CUSTOMERNO: "C10025",
+          ENDDATE: "2026-03-28 00:00:00.000",
+          PERCENTCOMPLETE: "72",
+          PROJECTLEADER: "JMILLER",
+          PROJECTNO: "P-1001",
+          REVENUEBUDGET: "85000",
+          SALESREP: "JMILLER",
+          SITENAME: "North Peak Main Campus",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Campus AV Refresh",
+        },
+      ],
+    },
+    {
+      tableName: "ldview_projectsnapshot",
+      rows: [
+        {
+          ASOFDATE: "2026-03-23 00:00:00.000",
+          CUSTOMERNAME: "North Peak University",
+          PROJECTLEADER: "JMILLER",
+          PROJECTNO: "P-1001",
+          SNAPSHOTHOURS: "88",
+          SNAPSHOTLABCOST: "18000",
+          SNAPSHOTMATCOST: "24000",
+          SNAPSHOTMISCCOST: "2000",
+          SNAPSHOTREVENUE: "71000",
+          SNAPSHOTSUBCOST: "7000",
+          STATUSCODE: "ACTIVE",
+          TITLE: "Campus AV Refresh",
+        },
+      ],
+    },
+    {
+      tableName: "ldview_projectdetail",
+      rows: [
+        {
+          CONITEMNO: "CI-1001",
+          COST: "1200",
+          DESCRIPTION: "Display package",
+          DETAILTYPE: "EQUIPMENT",
+          EXTENDEDCOST: "2400",
+          EXTENDEDPRICE: "3600",
+          ITEMTYPE: "MATERIAL",
+          PROJECTNO: "P-1001",
+          QTY: "2",
+          STAGINGLOCATION: "Warehouse A",
+          STATUSCODE: "ACTIVE",
+          WBS: "1.2.0",
+        },
+      ],
+    },
+  ]);
+}
+
+vi.mock("pg", () => ({
+  Pool: class MockPool {
+    async end(): Promise<void> {
+      return;
+    }
+
+    async query(sql: string): Promise<{ rows: Record<string, unknown>[] }> {
+      if (sql.includes("information_schema.tables")) {
+        return {
+          rows: [...mockPgTables.values()].map((table) => ({
+            table_name: table.tableName,
+            table_schema: table.schemaName ?? "public",
+          })),
+        };
+      }
+
+      const match = sql.match(/FROM\s+"([^"]+)"\."([^"]+)"/i);
+      if (!match) {
+        throw new Error(`Unexpected PostgreSQL query in test: ${sql}`);
+      }
+
+      const [, schemaName, tableName] = match;
+      const table = mockPgTables.get(buildMockPgTableKey(tableName, schemaName));
+
+      return {
+        rows: table ? table.rows.map((row) => ({ ...row })) : [],
+      };
+    }
+  },
+}));
 
 import {
   getBillingSummary,
   getBusinessOverview,
   getFollowUps,
+  getProjectDetails,
   getProjectActivityStream,
   getProjectProgress,
+  getProjectSnapshots,
 } from "@/lib/q360/business-read";
 import { clearListActionCache } from "@/lib/q360/list-actions";
+import { clearMockPostgresCache } from "@/lib/q360/mock-postgres";
 
 const server = setupServer();
-const tempDirectories = new Set<string>();
-
-function createFeature1MockDb(): string {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "q360-team1-business-read-"));
-  tempDirectories.add(tempDir);
-
-  const dbPath = path.join(tempDir, "feature1.sqlite");
-  const db = new Database(dbPath);
-
-  try {
-    db.exec(`
-      CREATE TABLE projects (
-        PROJECTNO TEXT PRIMARY KEY,
-        TITLE TEXT,
-        CUSTOMERNO TEXT,
-        CUSTOMER_COMPANY TEXT,
-        STATUSCODE TEXT,
-        ENDDATE TEXT,
-        PROJECTSTARTDATE TEXT,
-        STARTDATE TEXT,
-        PROJECTLEADER TEXT,
-        MODDATE TEXT,
-        PERCENTCOMPLETE TEXT,
-        HOURSBUDGET TEXT,
-        REVENUEBUDGET TEXT,
-        SITENO TEXT,
-        SALESREP TEXT
-      );
-      CREATE TABLE projectschedule (
-        PROJECTSCHEDULENO TEXT PRIMARY KEY,
-        PROJECTNO TEXT,
-        PROJECTTITLE TEXT,
-        TITLE TEXT,
-        STATUSCODE TEXT,
-        SCHEDDATE TEXT,
-        ENDDATE TEXT,
-        ASSIGNEE TEXT,
-        EFFORT TEXT,
-        PRIORITY TEXT,
-        TASKPERCENTCOMPLETE TEXT,
-        PROJECTPERCENTCOMPLETE TEXT,
-        WBS TEXT,
-        SCHED TEXT,
-        MODDATE TEXT,
-        SEQ TEXT
-      );
-      CREATE TABLE projectevents (
-        PROJEVENTNO TEXT PRIMARY KEY,
-        PROJECTNO TEXT,
-        USERID TEXT,
-        DATE TEXT,
-        TYPE TEXT,
-        COMMENT TEXT
-      );
-      CREATE TABLE timebill (
-        TIMEBILLNO TEXT PRIMARY KEY,
-        PROJECTNO TEXT,
-        CUSTOMERNO TEXT,
-        DATE TEXT,
-        TIMEBILLED TEXT,
-        CATEGORY TEXT,
-        DESCRIPTION TEXT
-      );
-    `);
-
-    const insertProject = db.prepare(`
-      INSERT INTO projects (
-        PROJECTNO, TITLE, CUSTOMERNO, CUSTOMER_COMPANY, STATUSCODE, ENDDATE, PROJECTSTARTDATE, STARTDATE,
-        PROJECTLEADER, MODDATE, PERCENTCOMPLETE, HOURSBUDGET, REVENUEBUDGET, SITENO, SALESREP
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    insertProject.run(
-      "P-1001",
-      "Campus AV Refresh",
-      "C10025",
-      "North Peak University",
-      "ACTIVE",
-      "2026-03-28 00:00:00.000",
-      "2026-02-03 00:00:00.000",
-      "2026-02-10 00:00:00.000",
-      "JMILLER",
-      "2026-03-20 14:15:00.000",
-      "72",
-      "120",
-      "85000",
-      "S-1001",
-      "JMILLER",
-    );
-    insertProject.run(
-      "P-1002",
-      "Clinic Exam Room Expansion",
-      "C10026",
-      "Summit Health",
-      "ACTIVE",
-      "2026-03-18 00:00:00.000",
-      "2026-01-15 00:00:00.000",
-      "2026-01-22 00:00:00.000",
-      "RLEE",
-      "2026-03-01 09:00:00.000",
-      "58",
-      "96",
-      "64000",
-      "S-1002",
-      "RLEE",
-    );
-    insertProject.run(
-      "P-1003",
-      "Council Chamber Modernization",
-      "C10027",
-      "City of Fairfield",
-      "PLANNING",
-      "2026-04-11 00:00:00.000",
-      "2026-02-25 00:00:00.000",
-      "2026-03-02 00:00:00.000",
-      "KADAMS",
-      "2026-03-22 16:40:00.000",
-      "22",
-      "140",
-      "132000",
-      "S-1003",
-      "KADAMS",
-    );
-
-    const insertTask = db.prepare(`
-      INSERT INTO projectschedule (
-        PROJECTSCHEDULENO, PROJECTNO, PROJECTTITLE, TITLE, STATUSCODE, SCHEDDATE, ENDDATE,
-        ASSIGNEE, EFFORT, PRIORITY, TASKPERCENTCOMPLETE, PROJECTPERCENTCOMPLETE, WBS,
-        SCHED, MODDATE, SEQ
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    insertTask.run(
-      "TS-1001",
-      "P-1001",
-      "Campus AV Refresh",
-      "Secure procurement approval",
-      "INPROGRESS",
-      "2026-03-17 00:00:00.000",
-      "2026-03-19 00:00:00.000",
-      "JMILLER",
-      "6.5",
-      "HIGH",
-      "48",
-      "72",
-      "1.1.0",
-      "Waiting on final client sign-off before procurement can start.",
-      "2026-03-18 13:10:00.000",
-      "10",
-    );
-    insertTask.run(
-      "TS-1002",
-      "P-1002",
-      "Clinic Exam Room Expansion",
-      "Update margin worksheet",
-      "NOTSTARTED",
-      "2026-03-23 00:00:00.000",
-      "2026-03-24 00:00:00.000",
-      "RLEE",
-      "3.0",
-      "MEDIUM",
-      "0",
-      "58",
-      "2.4.0",
-      "Finance needs revised margin worksheet.",
-      "2026-03-23 15:45:00.000",
-      "20",
-    );
-    insertTask.run(
-      "TS-1003",
-      "P-1003",
-      "Council Chamber Modernization",
-      "Confirm room counts",
-      "WAITING",
-      "2026-03-24 00:00:00.000",
-      "2026-03-25 00:00:00.000",
-      "KADAMS",
-      "2.0",
-      "LOW",
-      "15",
-      "22",
-      "3.2.1",
-      "Awaiting customer confirmation on room counts.",
-      "2026-03-22 11:30:00.000",
-      "30",
-    );
-
-    const insertEvent = db.prepare(`
-      INSERT INTO projectevents (PROJEVENTNO, PROJECTNO, USERID, DATE, TYPE, COMMENT)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    insertEvent.run(
-      "EV-1001",
-      "P-1001",
-      "JMILLER",
-      "2026-03-21 10:30:00.000",
-      "NOTE",
-      "Client approved revised project plan.",
-    );
-    insertEvent.run(
-      "EV-1002",
-      "P-1002",
-      "RLEE",
-      "2026-03-18 15:10:00.000",
-      "FINANCE",
-      "Billing review flagged missing labor markup.",
-    );
-    insertEvent.run(
-      "EV-1003",
-      "P-1003",
-      "KADAMS",
-      "2026-03-22 08:45:00.000",
-      "HANDOFF",
-      "Sales handoff package sent to PM.",
-    );
-
-    const insertTimebill = db.prepare(`
-      INSERT INTO timebill (TIMEBILLNO, PROJECTNO, CUSTOMERNO, DATE, TIMEBILLED, CATEGORY, DESCRIPTION)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    insertTimebill.run(
-      "TB-1001",
-      "P-1001",
-      "C10025",
-      "2026-03-21 16:00:00.000",
-      "5.5",
-      "LABOR",
-      "Rack integration and testing",
-    );
-    insertTimebill.run(
-      "TB-1002",
-      "P-1002",
-      "C10026",
-      "2026-03-20 11:15:00.000",
-      "3.0",
-      "LABOR",
-      "Site walk and pricing update",
-    );
-    insertTimebill.run(
-      "TB-1003",
-      "P-1003",
-      "C10027",
-      "2026-03-22 17:00:00.000",
-      "4.25",
-      "ENGINEERING",
-      "Design package revision",
-    );
-  } finally {
-    db.close();
-  }
-
-  return dbPath;
-}
 
 describe("business read adapter", () => {
   beforeAll(() => {
     server.listen({ onUnhandledRequest: "error" });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await clearMockPostgresCache();
     clearListActionCache();
+    mockPgTables.clear();
     server.resetHandlers();
     vi.useRealTimers();
     vi.unstubAllEnvs();
-    for (const tempDirectory of tempDirectories) {
-      fs.rmSync(tempDirectory, { force: true, recursive: true });
-    }
-    tempDirectories.clear();
   });
 
   afterAll(() => {
     server.close();
   });
 
-  it("returns project progress from mock.db in mock mode", async () => {
-    const dbPath = createFeature1MockDb();
-    vi.stubEnv("USE_MOCK_DATA", "true");
-    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
+  it("returns project progress from PostgreSQL when DATABASE_URL points to Postgres", async () => {
+    seedFeature1PostgresTables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
 
     const result = await getProjectProgress(10);
 
-    expect(result.sourceName).toBe("mock.db:projects");
-    expect(result.taskSourceName).toBe("mock.db:projectschedule");
+    expect(result.sourceName).toBe("postgres:projects");
+    expect(result.taskSourceName).toBe("postgres:projectschedule");
+    expect(result.warning).toBeNull();
     expect(result.projects).toHaveLength(3);
     expect(result.summary.totalCount).toBe(3);
     expect(result.summary.activeCount).toBe(3);
@@ -323,6 +523,8 @@ describe("business read adapter", () => {
         revenueBudget: 64000,
         salesRepId: "RLEE",
         siteId: "S-1002",
+        siteName: "Summit Clinic East",
+        snapshotGrossProfit: -8000,
         startDate: "2026-01-22 00:00:00.000",
         status: "ACTIVE",
         taskCount: 1,
@@ -338,16 +540,16 @@ describe("business read adapter", () => {
     );
   });
 
-  it("returns follow-up pressure from mock.db in mock mode", async () => {
-    const dbPath = createFeature1MockDb();
-    vi.stubEnv("USE_MOCK_DATA", "true");
-    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
+  it("returns follow-up pressure from PostgreSQL when DATABASE_URL points to Postgres", async () => {
+    seedFeature1PostgresTables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
 
     const result = await getFollowUps(10);
 
-    expect(result.sourceName).toBe("mock.db:projectschedule");
+    expect(result.sourceName).toBe("postgres:projectschedule");
+    expect(result.warning).toBeNull();
     expect(result.tasks).toHaveLength(3);
     expect(result.summary.totalCount).toBe(3);
     expect(result.summary.overdueTaskCount).toBe(1);
@@ -384,35 +586,74 @@ describe("business read adapter", () => {
     );
   });
 
-  it("returns a project activity stream from mock.db in mock mode", async () => {
-    const dbPath = createFeature1MockDb();
-    vi.stubEnv("USE_MOCK_DATA", "true");
-    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
+  it("returns a project activity stream from PostgreSQL when DATABASE_URL points to Postgres", async () => {
+    seedFeature1PostgresTables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
 
     const result = await getProjectActivityStream(10);
 
-    expect(result.sourceName).toBe("mock.db:projectevents");
+    expect(result.sourceName).toBe("postgres:projectevents");
     expect(result.activities).toHaveLength(3);
     expect(result.summary.handoffCount).toBe(1);
     expect(result.summary.financeCount).toBe(1);
   });
 
-  it("returns a time and billing summary from mock.db in mock mode", async () => {
-    const dbPath = createFeature1MockDb();
-    vi.stubEnv("USE_MOCK_DATA", "true");
-    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
+  it("returns a time and billing summary from PostgreSQL when DATABASE_URL points to Postgres", async () => {
+    seedFeature1PostgresTables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
 
     const result = await getBillingSummary(10);
 
-    expect(result.sourceName).toBe("mock.db:timebill");
+    expect(result.sourceName).toBe("postgres:timebill");
     expect(result.entries).toHaveLength(3);
     expect(result.summary.totalHoursBilled).toBe(12.75);
   });
 
-  it("builds a business overview with activity and billing from mock.db", async () => {
-    const dbPath = createFeature1MockDb();
-    vi.stubEnv("USE_MOCK_DATA", "true");
-    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
+  it("returns project snapshots from LDVIEW_PROJECTSNAPSHOT", async () => {
+    seedFeature1PostgresTables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
+
+    const result = await getProjectSnapshots(10);
+
+    expect(result.sourceName).toBe("postgres:ldview_projectsnapshot");
+    expect(result.snapshots).toHaveLength(3);
+    expect(result.summary.totalCount).toBe(3);
+    expect(result.summary.snapshotRevenueTotal).toBe(166000);
+    expect(result.snapshots[0]).toEqual(
+      expect.objectContaining({
+        customerName: "North Peak University",
+        grossMargin: 28.17,
+        grossProfit: 20000,
+        projectId: "P-1001",
+        revenue: 71000,
+      }),
+    );
+  });
+
+  it("returns project detail rows from LDVIEW_PROJECTDETAIL", async () => {
+    seedFeature1PostgresTables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
+
+    const result = await getProjectDetails(10);
+
+    expect(result.sourceName).toBe("postgres:ldview_projectdetail");
+    expect(result.details).toHaveLength(3);
+    expect(result.summary.totalCount).toBe(3);
+    expect(result.summary.totalExtendedCost).toBe(11600);
+    expect(result.summary.totalExtendedPrice).toBe(16400);
+    expect(result.details[0]).toEqual(
+      expect.objectContaining({
+        description: "Display package",
+        projectId: "P-1001",
+        projectTitle: "Campus AV Refresh",
+        wbs: "1.2.0",
+      }),
+    );
+  });
+
+  it("builds a business overview with activity and billing from PostgreSQL", async () => {
+    seedFeature1PostgresTables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
 
@@ -423,14 +664,18 @@ describe("business read adapter", () => {
       taskLimit: 2,
     });
 
-    expect(overview.dataSources.projects).toBe("mock.db:projects");
-    expect(overview.dataSources.tasks).toBe("mock.db:projectschedule");
-    expect(overview.dataSources.activity).toBe("mock.db:projectevents");
-    expect(overview.dataSources.billing).toBe("mock.db:timebill");
+    expect(overview.dataSources.projects).toBe("postgres:projects");
+    expect(overview.dataSources.tasks).toBe("postgres:projectschedule");
+    expect(overview.dataSources.activity).toBe("postgres:projectevents");
+    expect(overview.dataSources.billing).toBe("postgres:timebill");
+    expect(overview.dataSources.snapshots).toBe("postgres:ldview_projectsnapshot");
+    expect(overview.dataSources.detail).toBe("postgres:ldview_projectdetail");
     expect(overview.projectProgress.projects).toHaveLength(2);
     expect(overview.followUps.tasks).toHaveLength(2);
     expect(overview.activityStream?.activities).toHaveLength(2);
     expect(overview.billingSummary?.entries).toHaveLength(2);
+    expect(overview.projectSnapshots?.snapshots).toHaveLength(3);
+    expect(overview.projectDetails?.details).toHaveLength(3);
     expect(overview.actionCenter.recommendations).toHaveLength(2);
     expect(overview.actionCenter.summary.highPriorityCount).toBe(2);
     expect(overview.actionCenter.summary.triggeredRuleCounts.overdue_task).toBe(1);
@@ -440,6 +685,8 @@ describe("business read adapter", () => {
     expect(overview.summary.overdueTaskCount).toBe(1);
     expect(overview.summary.highPriorityActionCount).toBe(2);
     expect(overview.summary.recommendationCount).toBe(2);
+    expect(overview.summary.snapshotRevenueTotal).toBe(166000);
+    expect(overview.summary.detailLineCount).toBe(3);
     expect(overview.warnings).toHaveLength(0);
     expect(overview.projectProgress.projects[0]).toEqual(
       expect.objectContaining({
@@ -457,6 +704,39 @@ describe("business read adapter", () => {
         wbs: "1.1.0",
       }),
     );
+  });
+
+  it("keeps Feature 1 usable when only project tables are seeded", async () => {
+    seedProjectOnlyFeature1Tables();
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-24T12:00:00.000Z"));
+
+    const [projectProgress, followUps, overview] = await Promise.all([
+      getProjectProgress(10),
+      getFollowUps(10),
+      getBusinessOverview({ projectLimit: 10, taskLimit: 10 }),
+    ]);
+
+    expect(projectProgress.projects).toHaveLength(1);
+    expect(projectProgress.projects[0]).toEqual(
+      expect.objectContaining({
+        customerName: "North Peak University",
+        detailLineCount: 1,
+        siteName: "North Peak Main Campus",
+        snapshotGrossProfit: 20000,
+      }),
+    );
+    expect(projectProgress.taskSourceName).toBe("Unavailable");
+    expect(projectProgress.warning).toContain("Project task data unavailable");
+
+    expect(followUps.tasks).toHaveLength(0);
+    expect(followUps.sourceName).toBe("Unavailable");
+    expect(followUps.warning).toContain("Project task data unavailable");
+
+    expect(overview.projectSnapshots?.snapshots).toHaveLength(1);
+    expect(overview.projectDetails?.details).toHaveLength(1);
+    expect(overview.warnings.some((warning) => warning.includes("Project task data unavailable"))).toBe(true);
   });
 
   it("keeps completed tasks out of the follow-up queue even when they were due today", async () => {

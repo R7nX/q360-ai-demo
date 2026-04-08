@@ -1,11 +1,66 @@
-import Database from "better-sqlite3";
-import fs from "fs";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import os from "os";
-import path from "path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+type MockPgTable = {
+  rows: Record<string, unknown>[];
+  schemaName?: string;
+  tableName: string;
+};
+
+const mockPgTables = new Map<string, MockPgTable>();
+
+function buildMockPgTableKey(tableName: string, schemaName = "public"): string {
+  return `${schemaName}.${tableName}`.toUpperCase();
+}
+
+function setMockPgTables(tables: MockPgTable[]): void {
+  mockPgTables.clear();
+
+  for (const table of tables) {
+    mockPgTables.set(
+      buildMockPgTableKey(table.tableName, table.schemaName),
+      {
+        rows: table.rows.map((row) => ({ ...row })),
+        schemaName: table.schemaName ?? "public",
+        tableName: table.tableName,
+      },
+    );
+  }
+}
+
+vi.mock("pg", () => ({
+  Pool: class MockPool {
+    async end(): Promise<void> {
+      return;
+    }
+
+    async query(sql: string): Promise<{ rows: Record<string, unknown>[] }> {
+      if (sql.includes("information_schema.tables")) {
+        return {
+          rows: [...mockPgTables.values()].map((table) => ({
+            table_name: table.tableName,
+            table_schema: table.schemaName ?? "public",
+          })),
+        };
+      }
+
+      const match = sql.match(/FROM\s+"([^"]+)"\."([^"]+)"/i);
+      if (!match) {
+        throw new Error(`Unexpected PostgreSQL query in test: ${sql}`);
+      }
+
+      const [, schemaName, tableName] = match;
+      const table = mockPgTables.get(buildMockPgTableKey(tableName, schemaName));
+
+      return {
+        rows: table ? table.rows.map((row) => ({ ...row })) : [],
+      };
+    }
+  },
+}));
+
+import { clearMockPostgresCache } from "@/lib/q360/mock-postgres";
 import {
   clearListActionCache,
   listProjectRows,
@@ -13,119 +68,169 @@ import {
 } from "@/lib/q360/list-actions";
 
 const server = setupServer();
-const tempDirectories = new Set<string>();
-
-function createTempDb(setup: (db: Database.Database) => void): string {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "q360-team1-list-actions-"));
-  tempDirectories.add(tempDir);
-
-  const dbPath = path.join(tempDir, "feature1.sqlite");
-  const db = new Database(dbPath);
-
-  try {
-    setup(db);
-  } finally {
-    db.close();
-  }
-
-  return dbPath;
-}
 
 describe("Q360 list-action adapter", () => {
   beforeAll(() => {
     server.listen({ onUnhandledRequest: "error" });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await clearMockPostgresCache();
     clearListActionCache();
+    mockPgTables.clear();
     server.resetHandlers();
     vi.unstubAllEnvs();
-    for (const tempDirectory of tempDirectories) {
-      fs.rmSync(tempDirectory, { force: true, recursive: true });
-    }
-    tempDirectories.clear();
   });
 
   afterAll(() => {
     server.close();
   });
 
-  it("returns project and task rows from mock.db in mock mode", async () => {
-    const dbPath = createTempDb((db) => {
-      db.exec(`
-        CREATE TABLE projects (
-          PROJECTNO TEXT PRIMARY KEY,
-          TITLE TEXT,
-          CUSTOMERNO TEXT,
-          STATUSCODE TEXT,
-          ENDDATE TEXT,
-          PROJECTLEADER TEXT,
-          MODDATE TEXT
-        );
-        CREATE TABLE projectschedule (
-          PROJECTSCHEDULENO TEXT PRIMARY KEY,
-          PROJECTNO TEXT,
-          TITLE TEXT,
-          STATUSCODE TEXT,
-          ENDDATE TEXT,
-          ASSIGNEE TEXT,
-          SCHED TEXT,
-          MODDATE TEXT
-        );
-      `);
+  it("returns project and task rows from PostgreSQL when DATABASE_URL points to Postgres", async () => {
+    setMockPgTables([
+      {
+        tableName: "projects",
+        rows: [
+          {
+            CUSTOMERNO: "C10025",
+            ENDDATE: "2026-03-28 00:00:00.000",
+            MODDATE: "2026-03-21 10:00:00.000",
+            PROJECTLEADER: "JMILLER",
+            PROJECTNO: "P-DB-1001",
+            STATUSCODE: "ACTIVE",
+            TITLE: "Postgres Project",
+          },
+        ],
+      },
+      {
+        tableName: "projectschedule",
+        rows: [
+          {
+            ASSIGNEE: "JMILLER",
+            ENDDATE: "2026-03-24 00:00:00.000",
+            MODDATE: "2026-03-23 09:30:00.000",
+            PROJECTNO: "P-DB-1001",
+            PROJECTSCHEDULENO: "TS-DB-1001",
+            SCHED: "Generated from PostgreSQL",
+            STATUSCODE: "INPROGRESS",
+            TITLE: "Postgres Task",
+          },
+        ],
+      },
+    ]);
 
-      db.prepare(`
-        INSERT INTO projects (PROJECTNO, TITLE, CUSTOMERNO, STATUSCODE, ENDDATE, PROJECTLEADER, MODDATE)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        "P-DB-1001",
-        "SQLite Project",
-        "C10025",
-        "ACTIVE",
-        "2026-03-28 00:00:00.000",
-        "JMILLER",
-        "2026-03-21 10:00:00.000",
-      );
-      db.prepare(`
-        INSERT INTO projectschedule (PROJECTSCHEDULENO, PROJECTNO, TITLE, STATUSCODE, ENDDATE, ASSIGNEE, SCHED, MODDATE)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        "TS-DB-1001",
-        "P-DB-1001",
-        "SQLite Task",
-        "INPROGRESS",
-        "2026-03-24 00:00:00.000",
-        "JMILLER",
-        "Generated from mock.db",
-        "2026-03-23 09:30:00.000",
-      );
-    });
-
-    vi.stubEnv("USE_MOCK_DATA", "true");
-    vi.stubEnv("DATABASE_URL", `file:${dbPath}`);
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
 
     const [projects, tasks] = await Promise.all([listProjectRows(), listTaskRows()]);
 
-    expect(projects.sourceName).toBe("mock.db:projects");
-    expect(tasks.sourceName).toBe("mock.db:projectschedule");
+    expect(projects.sourceName).toBe("postgres:projects");
+    expect(tasks.sourceName).toBe("postgres:projectschedule");
     expect(projects.rows).toHaveLength(1);
     expect(tasks.rows).toHaveLength(1);
     expect(projects.rows[0]?.PROJECTNO).toBe("P-DB-1001");
     expect(tasks.rows[0]?.PROJECTSCHEDULENO).toBe("TS-DB-1001");
   });
 
-  it("requires actual SQLite project and task tables in mock mode", async () => {
-    const missingDbPath = path.join(os.tmpdir(), "q360-team1-list-actions-missing.sqlite");
+  it("prefers PROJECTSCHEDULE over a generic tasks table when both exist", async () => {
+    setMockPgTables([
+      {
+        tableName: "projectschedule",
+        rows: [
+          {
+            PROJECTNO: "P-DB-2001",
+            PROJECTSCHEDULENO: "PS-2001",
+            TITLE: "Scheduled Task",
+          },
+        ],
+      },
+      {
+        tableName: "tasks",
+        rows: [
+          {
+            id: "GENERIC-1",
+            title: "Generic task row",
+          },
+        ],
+      },
+    ]);
 
-    vi.stubEnv("USE_MOCK_DATA", "true");
-    vi.stubEnv("DATABASE_URL", `file:${missingDbPath}`);
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
+
+    const tasks = await listTaskRows();
+
+    expect(tasks.sourceName).toBe("postgres:projectschedule");
+    expect(tasks.rows[0]?.PROJECTSCHEDULENO).toBe("PS-2001");
+  });
+
+  it("requires actual PostgreSQL project and task tables when Feature 1 is pointed at Postgres", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
 
     await expect(listProjectRows()).rejects.toThrow(
-      "Mock mode requires actual SQLite table(s) for Project reads.",
+      "Feature 1 requires actual PostgreSQL table(s) for Project reads.",
     );
     await expect(listTaskRows()).rejects.toThrow(
-      "Mock mode requires actual SQLite table(s) for Task reads.",
+      "Feature 1 requires actual PostgreSQL table(s) for Task reads.",
     );
+  });
+
+  it("does not treat snapshot or detail tables as core project rows", async () => {
+    setMockPgTables([
+      {
+        tableName: "ldview_projectsnapshot",
+        rows: [
+          {
+            ASOFDATE: "2026-03-23 00:00:00.000",
+            PROJECTNO: "P-DB-1001",
+            SNAPSHOTREVENUE: "71000",
+          },
+        ],
+      },
+      {
+        tableName: "ldview_projectdetail",
+        rows: [
+          {
+            DESCRIPTION: "Display package",
+            PROJECTNO: "P-DB-1001",
+          },
+        ],
+      },
+    ]);
+
+    vi.stubEnv("DATABASE_URL", "postgresql://feature1:test@localhost:5432/q360_feature1");
+
+    await expect(listProjectRows()).rejects.toThrow(
+      "Feature 1 requires actual PostgreSQL table(s) for Project reads.",
+    );
+  });
+
+  it("falls back to live Q360 when DATABASE_URL is not PostgreSQL", async () => {
+    vi.stubEnv("DATABASE_URL", "mysql://legacy-user:legacy-pass@localhost:3306/q360demo");
+    vi.stubEnv("Q360_BASE_URL", "https://example.test");
+    vi.stubEnv("Q360_API_USER", "api-user");
+    vi.stubEnv("Q360_API_PASSWORD", "api-password");
+
+    server.use(
+      http.get("https://example.test/api/Project", () =>
+        HttpResponse.json({
+          code: 200,
+          message: "",
+          payload: {
+            result: [
+              {
+                projectno: "P-LIVE-1",
+                title: "Live Fallback Project",
+              },
+            ],
+          },
+          success: true,
+        }),
+      ),
+    );
+
+    const projects = await listProjectRows();
+
+    expect(projects.sourceName).toBe("Project");
+    expect(projects.rows[0]?.projectno).toBe("P-LIVE-1");
   });
 
   it("parses live-style project and task GET list responses", async () => {

@@ -61,7 +61,6 @@ Current Team 1 backend/domain foundation lives in:
 - `lib/q360/**`
 - `lib/domain/**`
 - `lib/rules/business-rules.ts`
-- `lib/sqlite.ts`
 
 Current Team 1 verification status:
 
@@ -97,14 +96,17 @@ Practical implication:
   - mock-backed
   - planned
 
-Current mock implication:
+Current database implication:
 
-- in mock mode, Team 1 now prefers SQLite data from `mock.db`
-- Team 1 now requires actual compatible SQLite tables in `mock.db`
+- Team 1 now prefers PostgreSQL data from `DATABASE_URL` whenever it is a PostgreSQL connection string
+- `USE_MOCK_DATA` is no longer the Team 1 runtime switch for `/feature1`
+- Team 1 now requires actual compatible PostgreSQL tables in `DATABASE_URL`
 - minimum seed for the current manager page:
-  - `projects`
-  - `projectschedule`
-- richer optional sections also use `projectevents` and `timebill` when present
+  - `PROJECTS`
+  - `LDVIEW_PROJECT`
+  - `LDVIEW_PROJECTSNAPSHOT`
+  - `LDVIEW_PROJECTDETAIL`
+- richer optional sections also use `PROJECTSCHEDULE`, `PROJECTEVENTS`, and `TIMEBILL` when present
 
 ## Unified schema direction
 
@@ -151,12 +153,15 @@ These support:
 
 ### Mock-backed now
 
-These are the current local mock foundations Team 1 uses when `USE_MOCK_DATA=true`:
+These are the current PostgreSQL-backed foundations Team 1 uses when `DATABASE_URL` points to PostgreSQL:
 
-- `mock.db` `projects`
-- `mock.db` `projectschedule`
-- optional: `mock.db` `projectevents`
-- optional: `mock.db` `timebill`
+- PostgreSQL `PROJECTS`
+- PostgreSQL `LDVIEW_PROJECT`
+- PostgreSQL `LDVIEW_PROJECTSNAPSHOT`
+- PostgreSQL `LDVIEW_PROJECTDETAIL`
+- optional: PostgreSQL `PROJECTSCHEDULE`
+- optional: PostgreSQL `PROJECTEVENTS`
+- optional: PostgreSQL `TIMEBILL`
 
 ### Mock-backed or gated for now
 

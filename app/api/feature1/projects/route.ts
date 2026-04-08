@@ -1,4 +1,4 @@
-import { getProjectProgress } from "@/lib/q360/adapter";
+import { getProjectProgress } from "@/lib/q360/business-read";
 import { toRouteErrorResponse } from "@/lib/q360/client";
 
 export const runtime = "nodejs";

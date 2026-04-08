@@ -1,8 +1,12 @@
 import { z } from "zod";
 
 import type { Q360RecordRow } from "@/lib/domain/normalizers";
-import { fetchQ360Json, isMockMode } from "@/lib/q360/client";
-import { listMockProjectRows, listMockTaskRows } from "@/lib/q360/mock-sqlite";
+import { fetchQ360Json } from "@/lib/q360/client";
+import {
+  hasFeature1PostgresDatabase,
+  listMockProjectRows,
+  listMockTaskRows,
+} from "@/lib/q360/mock-postgres";
 
 type ListActionResult = {
   rows: Q360RecordRow[];
@@ -20,19 +24,16 @@ const rawListActionPayloadSchema = z.object({
 
 const CACHE_TTL_MS = 30_000;
 const PROJECT_TABLE_HINTS = [
-  "PROJECT",
   "PROJECTS",
   "LDVIEW_PROJECT",
-  "LDVIEW_PROJECTSNAPSHOT",
-  "LDVIEW_PROJECTDETAIL",
 ] as const;
 const TASK_TABLE_HINTS = [
-  "TASK",
-  "TASKS",
+  "PROJECTSCHEDULE",
   "LDVIEW_TASK",
   "TASKCONSOLEVIEW",
-  "PROJECTSCHEDULE",
   "PROJECTTASKHISTORY",
+  "TASK",
+  "TASKS",
 ] as const;
 
 const listActionCache = new Map<string, CacheEntry>();
@@ -42,8 +43,8 @@ function buildCacheKey(
   entityName: "Project" | "Task",
   options: { projectNo?: string } = {},
 ): string {
-  const cacheScope = isMockMode()
-    ? "mock"
+  const cacheScope = hasFeature1PostgresDatabase()
+    ? `postgres:${process.env.DATABASE_URL ?? ""}`
     : `live:${process.env.Q360_BASE_URL ?? ""}:${process.env.Q360_API_USER ?? process.env.Q360_API_USERNAME ?? ""}`;
 
   return `${cacheScope}:${entityName}:${options.projectNo ?? ""}`;
@@ -123,7 +124,7 @@ function buildMissingMockTableError(
   tableHints: readonly string[],
 ): Error {
   return new Error(
-    `Mock mode requires actual SQLite table(s) for ${entityName} reads. Seed one of: ${tableHints.join(", ")}.`,
+    `Feature 1 requires actual PostgreSQL table(s) for ${entityName} reads. Seed one of: ${tableHints.join(", ")}.`,
   );
 }
 
@@ -142,19 +143,19 @@ export async function listProjectRows(
   }
 
   const nextRequest = (async () => {
-    if (isMockMode()) {
-      const sqliteResult = listMockProjectRows(options);
-      if (!sqliteResult) {
+    if (hasFeature1PostgresDatabase()) {
+      const postgresResult = await listMockProjectRows(options);
+      if (!postgresResult) {
         throw buildMissingMockTableError("Project", PROJECT_TABLE_HINTS);
       }
 
       const result = {
         rows: sortRowsByDate(
-          sqliteResult.rows,
+          postgresResult.rows,
           ["enddate", "installdate", "startdate"],
           "asc",
         ),
-        sourceName: sqliteResult.sourceName,
+        sourceName: postgresResult.sourceName,
       };
 
       setCachedValue(cacheKey, result);
@@ -201,15 +202,15 @@ export async function listTaskRows(
   }
 
   const nextRequest = (async () => {
-    if (isMockMode()) {
-      const sqliteResult = listMockTaskRows(options);
-      if (!sqliteResult) {
+    if (hasFeature1PostgresDatabase()) {
+      const postgresResult = await listMockTaskRows(options);
+      if (!postgresResult) {
         throw buildMissingMockTableError("Task", TASK_TABLE_HINTS);
       }
 
       const result = {
-        rows: sortRowsByDate(sqliteResult.rows, ["enddate"], "asc"),
-        sourceName: sqliteResult.sourceName,
+        rows: sortRowsByDate(postgresResult.rows, ["enddate"], "asc"),
+        sourceName: postgresResult.sourceName,
       };
 
       setCachedValue(cacheKey, result);

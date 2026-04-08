@@ -1,4 +1,4 @@
-import { getBusinessOverview } from "@/lib/q360/adapter";
+import { getBusinessOverview } from "@/lib/q360/business-read";
 import { toRouteErrorResponse } from "@/lib/q360/client";
 
 export const runtime = "nodejs";
@@ -22,11 +22,13 @@ export async function GET(request: Request) {
       agendaLimit: parseOptionalLimit(searchParams.get("agendaLimit"), 8),
       activityLimit: parseOptionalLimit(searchParams.get("activityLimit"), 8),
       billingLimit: parseOptionalLimit(searchParams.get("billingLimit"), 8),
+      detailLimit: parseOptionalLimit(searchParams.get("detailLimit"), 8),
       projectLimit: parseOptionalLimit(searchParams.get("projectLimit"), 8),
       recommendationLimit: parseOptionalLimit(
         searchParams.get("recommendationLimit"),
         6,
       ),
+      snapshotLimit: parseOptionalLimit(searchParams.get("snapshotLimit"), 8),
       taskLimit: parseOptionalLimit(searchParams.get("taskLimit"), 8),
     });
 

@@ -113,7 +113,6 @@ Current important Team 1 files:
 - `lib/q360/**`
 - `lib/domain/**`
 - `lib/rules/business-rules.ts`
-- `lib/sqlite.ts`
 - `types/q360.ts`
 
 ## Current schema direction
@@ -241,19 +240,22 @@ Use these first for:
 
 ## Mock-backed now
 
-When `USE_MOCK_DATA=true`, Team 1 now prefers SQLite rows from `mock.db`.
+When `DATABASE_URL` is a PostgreSQL connection string, Team 1 now prefers PostgreSQL rows from `DATABASE_URL`.
 
 Minimum tables for the current Team 1 page:
 
-- `projects`
-- `projectschedule`
+- `PROJECTS`
+- `LDVIEW_PROJECT`
+- `LDVIEW_PROJECTSNAPSHOT`
+- `LDVIEW_PROJECTDETAIL`
 
 Optional richer mock sections:
 
-- `projectevents`
-- `timebill`
+- `PROJECTSCHEDULE`
+- `PROJECTEVENTS`
+- `TIMEBILL`
 
-Team 1 no longer ships bundled row fixtures as a runtime fallback. Mock mode now requires actual compatible SQLite tables.
+Team 1 no longer ships bundled row fixtures as a runtime fallback. The current Team 1 runtime now requires actual compatible PostgreSQL tables.
 
 ## Schema-visible or partially validated, but not yet fully live-safe
 
@@ -338,7 +340,7 @@ A Team 1 feature is complete when:
 - it pulls from normalized domain data
 - its Q360 source status is documented
 - it has loading, error, and empty states
-- it works in mock mode or has an explicit mock fallback story
+- it works against the documented runtime data source or has an explicit fallback story
 - it does not expose credentials or raw Q360 envelopes to the client
 
 ## Success criteria
@@ -354,7 +356,7 @@ The Team 1 prototype is successful when a user can:
 
 - many generic `POST /api/Record/{source}?_a=list` reads are still blocked for the current API user
 - the datasource access-list route is not dependable in the live tenant
-- `Q360_MOCK_MODE` still exists as a legacy fallback, but `USE_MOCK_DATA` is now the primary Team 1 mock switch
+- Team 1 runtime selection is now driven by the available PostgreSQL `DATABASE_URL` and live Q360 credentials
 
 Treat these as integration constraints, not product features.
 
