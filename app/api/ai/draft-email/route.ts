@@ -25,6 +25,10 @@ const SUPPORTED_TONES = [
   "urgent",
 ] as const;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export async function POST(request: NextRequest | Request) {
   let body: Record<string, unknown>;
   try {
@@ -37,7 +41,9 @@ export async function POST(request: NextRequest | Request) {
   if (!entityType) {
     return new Response(
       'Invalid entityType. Supported: "dispatch", "project", "customer", "servicecontract", "timebill".',
-      { status: 400 }
+      {
+        status: 400,
+      }
     );
   }
 
@@ -71,6 +77,8 @@ export async function POST(request: NextRequest | Request) {
     );
   }
 
+  const context = isRecord(body.context) ? body.context : undefined;
+
   const format =
     "nextUrl" in request
       ? request.nextUrl.searchParams.get("format")
@@ -84,6 +92,7 @@ export async function POST(request: NextRequest | Request) {
         intent,
         tone,
         audience,
+        context,
       });
       return Response.json(payload);
     }
@@ -94,6 +103,7 @@ export async function POST(request: NextRequest | Request) {
       intent,
       tone,
       audience,
+      context,
     });
 
     return new Response(stream, {
