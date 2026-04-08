@@ -388,3 +388,75 @@ Add a new section whenever a stage starts, changes materially, becomes blocked, 
   - run end-to-end employee route verification (`/home`, `/my-dispatches/[dispatchNo]`, `/workflows`) with AI routes enabled and capture any UX polish gaps
 - Tested:
   - ran `npm run lint` successfully after each integration step
+
+## Documentation Cleanup: Seed Script Consolidation
+
+- Date: 2026-04-05
+- Status: complete
+- Work completed:
+  - updated `docs/SEED_SCRIPT_REFINEMENT.md` to match the current `scripts/seed-data.ts` cluster counts (`Recently Closed: 18`, `On Hold/Pending: 4`)
+  - updated `docs/plans/PROJECT_MASTER_PLAN.md` script tree to reflect the unified seed setup (`scripts/seed.ts` + `scripts/seed-data.ts`)
+  - added this cleanup entry to mark older `scripts/seed-local.ts` references in prior report sections as historical context from pre-consolidation stages
+- Files touched:
+  - `docs/SEED_SCRIPT_REFINEMENT.md`
+  - `docs/plans/PROJECT_MASTER_PLAN.md`
+  - `docs/reports/report.md`
+- Data mode:
+  - documentation
+- Blockers / dependencies:
+  - none
+- Next step:
+  - continue seed refinement directly in `scripts/seed.ts` and `scripts/seed-data.ts` with docs now aligned to current script ownership
+- Tested:
+  - verified `rg -n "seed-mock-db.ts" docs/plans/PROJECT_MASTER_PLAN.md` no longer returns results
+  - verified the seed refinement cluster totals now match the live dataset definitions in `scripts/seed-data.ts`
+
+## Session Handoff: Seed Profile Implementation
+
+- Date: 2026-04-05
+- Status: in progress
+- Work completed:
+  - implemented profile-backed dynamic seeding support for high-value tables in `scripts/seed.ts` + `scripts/seed-profiles.ts`
+  - added profile discovery mode (`npx tsx scripts/seed.ts profiles`) and npm alias (`npm run seed:profiles`)
+  - updated `docs/SEED_SCRIPT_REFINEMENT.md` to document profile mode and profile-backed/fallback dynamic behavior
+  - added teammate-facing execution plan in `docs/plans/HIGH_VALUE_TABLE_SEED_PLAN.md`
+- Files touched:
+  - `scripts/seed.ts`
+  - `scripts/seed-profiles.ts`
+  - `package.json`
+  - `docs/SEED_SCRIPT_REFINEMENT.md`
+  - `docs/plans/HIGH_VALUE_TABLE_SEED_PLAN.md`
+- Data mode:
+  - mock + dynamic synthetic
+- Blockers / dependencies:
+  - `feature3` has now been merged into this branch, so the seed work should continue from the merged baseline rather than the older pre-merge `main`
+  - if the branch is restarted later, verify the latest shared fixes are still present before comparing against `main`
+- Next step:
+  - resume from `chore/seed-data-refinement` and continue profile validation and seed smoke checks on the merged branch
+  - run smoke checks: `npm run seed:profiles` and a dynamic profile target (for example `npx tsx scripts/seed.ts MACHINE 20`)
+- Tested:
+  - verified `npm run seed:profiles` lists all profile-backed tables in ALL CAPS
+
+## Merge Coordination: feature3 Baseline
+
+- Date: 2026-04-05
+- Status: complete
+- Work completed:
+  - merged `feature3` into `chore/seed-data-refinement` so this branch now includes the task-table naming fix (`task` support alongside `TASKS`), CI/lint cleanup, and the shared AI integration baseline that had not yet landed on `main`
+  - resolved the merge conflict in `docs/reports/report.md` and removed the obsolete `scripts/seed-local.ts` conflict path in favor of the unified seed flow
+  - verified the merged branch still passes `npm run lint`
+- Files touched:
+  - `docs/reports/report.md`
+  - `lib/mockDb.ts`
+  - `app/api/q360/tasks/route.ts`
+  - `app/api/ai/*`
+  - `components/ai/*`
+  - `__tests__/*`
+- Data mode:
+  - mixed
+- Blockers / dependencies:
+  - none
+- Next step:
+  - continue seed refinement on top of the merged `feature3` baseline
+- Tested:
+  - `npm run lint`

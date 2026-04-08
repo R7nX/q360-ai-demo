@@ -233,6 +233,21 @@ describe("POST /api/feature2/generate", () => {
     await expect(res.text()).resolves.toContain("Unsupported automation type");
   });
 
+  it("returns 400 for invalid tone with the shared tone list", async () => {
+    const res = await POST(
+      makeRequest({
+        recordId: "DB-001",
+        automationType: "project-status",
+        tone: "not-a-tone",
+      }) as never
+    );
+
+    expect(res.status).toBe(400);
+    await expect(res.text()).resolves.toContain(
+      "Invalid tone. Supported: professional, friendly, concise, formal, urgent"
+    );
+  });
+
   it("returns 404 when dispatch is not in mock DB or fallback data", async () => {
     mockGetDispatchByIdFromMockDb.mockResolvedValue(null);
 
@@ -306,4 +321,3 @@ describe("POST /api/feature2/generate", () => {
     await expect(res.text()).resolves.toContain("Failed to generate email");
   });
 });
-
