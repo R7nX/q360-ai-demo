@@ -49,10 +49,15 @@ export function validateSeedData(tables: SeedTables): ValidationResult {
     tables.knownUsers ?? TECHNICIANS.map((t) => t.name)
   );
 
-  // Build lookup sets
+  // Build lookup sets — empty set means the table was not seeded, so FK checks are skipped.
   const customerNos = new Set(tables.customers.map((c) => String(c.customerno)));
   const siteNos = new Set(tables.sites.map((s) => String(s.siteno)));
   const dispatchNos = new Set(tables.dispatches.map((d) => String(d.dispatchno)));
+
+  const hasCustomers = customerNos.size > 0;
+  const hasSites = siteNos.size > 0;
+  const hasDispatches = dispatchNos.size > 0;
+
 
   // ── CUSTOMER checks ─────────────────────────────────────────────────────
   const seenCustomerPKs = new Set<string>();
@@ -83,9 +88,11 @@ export function validateSeedData(tables: SeedTables): ValidationResult {
     }
     seenSitePKs.add(pkStr);
 
-    const custNo = String(s.customerno);
-    if (!customerNos.has(custNo)) {
-      errors.push({ table: "SITE", id: pkStr, rule: "fk_customerno", message: `References nonexistent customer: ${custNo}` });
+    if (hasCustomers) {
+      const custNo = String(s.customerno);
+      if (!customerNos.has(custNo)) {
+        errors.push({ table: "SITE", id: pkStr, rule: "fk_customerno", message: `References nonexistent customer: ${custNo}` });
+      }
     }
   }
 
@@ -103,14 +110,18 @@ export function validateSeedData(tables: SeedTables): ValidationResult {
     }
     seenDispatchPKs.add(pkStr);
 
-    // FK checks
-    const custNo = String(d.customerno);
-    if (!customerNos.has(custNo)) {
-      errors.push({ table: "DISPATCH", id: pkStr, rule: "fk_customerno", message: `References nonexistent customer: ${custNo}` });
+    // FK checks (skipped when referenced table has no rows — partial seed scenario)
+    if (hasCustomers) {
+      const custNo = String(d.customerno);
+      if (!customerNos.has(custNo)) {
+        errors.push({ table: "DISPATCH", id: pkStr, rule: "fk_customerno", message: `References nonexistent customer: ${custNo}` });
+      }
     }
-    const siteNo = String(d.siteno);
-    if (!siteNos.has(siteNo)) {
-      errors.push({ table: "DISPATCH", id: pkStr, rule: "fk_siteno", message: `References nonexistent site: ${siteNo}` });
+    if (hasSites) {
+      const siteNo = String(d.siteno);
+      if (!siteNos.has(siteNo)) {
+        errors.push({ table: "DISPATCH", id: pkStr, rule: "fk_siteno", message: `References nonexistent site: ${siteNo}` });
+      }
     }
 
     // Statuscode enum
@@ -144,14 +155,18 @@ export function validateSeedData(tables: SeedTables): ValidationResult {
     }
     seenTimebillPKs.add(pkStr);
 
-    // FK checks
-    const dispNo = String(tb.dispatchno);
-    if (!dispatchNos.has(dispNo)) {
-      errors.push({ table: "TIMEBILL", id: pkStr, rule: "fk_dispatchno", message: `References nonexistent dispatch: ${dispNo}` });
+    // FK checks (skipped when referenced table has no rows — partial seed scenario)
+    if (hasDispatches) {
+      const dispNo = String(tb.dispatchno);
+      if (!dispatchNos.has(dispNo)) {
+        errors.push({ table: "TIMEBILL", id: pkStr, rule: "fk_dispatchno", message: `References nonexistent dispatch: ${dispNo}` });
+      }
     }
-    const custNo = String(tb.customerno);
-    if (!customerNos.has(custNo)) {
-      errors.push({ table: "TIMEBILL", id: pkStr, rule: "fk_customerno", message: `References nonexistent customer: ${custNo}` });
+    if (hasCustomers) {
+      const custNo = String(tb.customerno);
+      if (!customerNos.has(custNo)) {
+        errors.push({ table: "TIMEBILL", id: pkStr, rule: "fk_customerno", message: `References nonexistent customer: ${custNo}` });
+      }
     }
 
     // Lifecycle: positive hours
@@ -254,7 +269,12 @@ async function main() {
   try {
     const queryAll = (table: string) => {
       try {
-        return db.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[];
+        const rows = db.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[];
+        // Normalize column names to lowercase so validators work regardless of how the
+        // table was created (some tables use UPPERCASE column names, e.g. tasks).
+        return rows.map((row) =>
+          Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase(), v]))
+        );
       } catch {
         return [];
       }
