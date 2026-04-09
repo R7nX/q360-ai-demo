@@ -58,6 +58,7 @@ export function validateSeedData(tables: SeedTables): ValidationResult {
   const hasSites = siteNos.size > 0;
   const hasDispatches = dispatchNos.size > 0;
 
+
   // ── CUSTOMER checks ─────────────────────────────────────────────────────
   const seenCustomerPKs = new Set<string>();
   for (const c of tables.customers) {

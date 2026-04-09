@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   const normalizedTone = normalizeTone(tone);
   if (!normalizedTone) {
     return new Response(
-      "Invalid tone. Supported: professional, friendly, concise",
+      "Invalid tone. Supported: professional, friendly, concise, formal, urgent",
       { status: 400 }
     );
   }

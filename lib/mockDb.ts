@@ -2,15 +2,11 @@
  * Read-only SQLite accessors for local `mock.db` (dispatches, customers, sites, time bills, tasks).
  */
 import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
 import type { Dispatch, Customer, Site, TimeBill } from "@/types/q360";
-
-const DB_PATH = path.join(process.cwd(), "mock.db");
+import { openReadonlySqliteDb } from "@/lib/sqlite";
 
 function getDb(): Database.Database | null {
-  if (!fs.existsSync(DB_PATH)) return null;
-  return new Database(DB_PATH, { readonly: true });
+  return openReadonlySqliteDb();
 }
 
 function hasTable(db: Database.Database, table: string): boolean {
@@ -283,9 +279,9 @@ function normalizeDispatch(row: Record<string, unknown>): Dispatch {
     date: str(r.date) ?? str(r.opendate) ?? str(r.calldate),
     closedate: str(r.closedate),
     estfixtime: str(r.estfixtime),
-    callername: str(r.caller),
+    callername: str(r.callername) ?? str(r.caller),
     calleremail: str(r.calleremail),
-    callerphone: str(r.callercontactno),
-    description: str(r.detail),
+    callerphone: str(r.callerphone) ?? str(r.callercontactno),
+    description: str(r.description) ?? str(r.detail),
   };
 }

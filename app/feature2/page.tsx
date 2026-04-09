@@ -10,6 +10,7 @@ import RecordSelector from "./components/RecordSelector";
 import AutomationTypeCard from "./components/AutomationTypeCard";
 import ToneSelector from "./components/ToneSelector";
 import EmailPreviewPanel from "./components/EmailPreviewPanel";
+import EmailDrafter from "@/components/ai/EmailDrafter";
 import DataSummary from "@/components/ai/DataSummary";
 import ActionRecommender from "@/components/ai/ActionRecommender";
 import StatusReport from "@/components/ai/StatusReport";
@@ -29,7 +30,7 @@ export default function Feature2Page() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const harnessEntityId = selectedRecord?.id ?? "DEMO-002";
+  const harnessEntityId = selectedRecord?.id ?? "D-0009";
   const harnessContext = selectedRecord
     ? {
         selectedRecord: {
@@ -235,6 +236,11 @@ export default function Feature2Page() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <EmailDrafter
+              entityId={harnessEntityId}
+              tone={tone}
+              context={harnessContext}
+            />
             <DataSummary
               entityId={harnessEntityId}
               tone={tone}

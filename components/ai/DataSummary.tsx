@@ -6,18 +6,22 @@
 import { useCallback, useState } from "react";
 import { FileText } from "lucide-react";
 import { API } from "@/lib/constants";
-import type { AiEntityType, AiToolResponse, ToneOption } from "@/types/feature2";
+import type {
+  AiEntityType,
+  AiToolResponse,
+  AiToneOption,
+} from "@/types/feature2";
 
-interface DataSummaryProps {
+export interface DataSummaryProps {
   entityId: string;
   entityType?: AiEntityType;
   intent?: string;
   audience?: "manager" | "customer" | "technician" | "internal";
-  tone?: ToneOption;
+  tone?: AiToneOption;
   context?: Record<string, unknown>;
 }
 
-export default function DataSummary({
+export function DataSummary({
   entityId,
   entityType = "dispatch",
   intent = "summary",
@@ -97,3 +101,5 @@ export default function DataSummary({
     </div>
   );
 }
+
+export default DataSummary;

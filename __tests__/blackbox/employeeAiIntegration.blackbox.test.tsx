@@ -236,18 +236,19 @@ describe("EmployeeEmailAssistant", () => {
   it("posts shared payload to /api/ai/draft-email?format=json and renders returned subject/body", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({
-        success: true,
-        result: {
-          subject: "Dispatch D-1001 complete",
-          content: "Body text from AI",
-          metadata: {
-            model: "gemini-test",
-            entityType: "dispatch",
-            entityId: "D-1001",
+      text: async () =>
+        JSON.stringify({
+          success: true,
+          result: {
+            subject: "Dispatch D-1001 complete",
+            content: "Body text from AI",
+            metadata: {
+              model: "gemini-test",
+              entityType: "dispatch",
+              entityId: "D-1001",
+            },
           },
-        },
-      }),
+        }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -287,11 +288,12 @@ describe("EmployeeEmailAssistant", () => {
   it("surfaces an error when the shared draft route fails", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
-      json: async () => ({
-        success: false,
-        result: null,
-        message: "draft route failed",
-      }),
+      text: async () =>
+        JSON.stringify({
+          success: false,
+          result: null,
+          message: "draft route failed",
+        }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
@@ -305,6 +307,26 @@ describe("EmployeeEmailAssistant", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/draft route failed/i)).toBeInTheDocument();
+    });
+  });
+
+  it("surfaces plain-text API errors when draft-email does not return JSON", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      text: async () => "entityId is required.",
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { EmployeeEmailAssistant } = await import(
+      "@/components/ai/employee/EmployeeEmailAssistant"
+    );
+
+    render(<EmployeeEmailAssistant dispatchNo="D-1001" />);
+
+    await userEvent.click(screen.getByRole("button", { name: /generate draft/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/entityId is required\./i)).toBeInTheDocument();
     });
   });
 });
