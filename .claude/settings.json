@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const p=i.tool_input?.file_path||'';if(/\\.(ts|tsx)$/.test(p)&&!/node_modules/.test(p)){const{execSync}=require('child_process');try{execSync('npx tsc --noEmit',{cwd:process.env.CLAUDE_PROJECT_DIR||process.cwd(),stdio:'pipe'})}catch(e){const out=e.stdout?.toString()||'';const err=e.stderr?.toString()||'';console.error('[TypeCheck] Type errors found after editing '+p);if(out)console.error(out.split('\\n').slice(0,20).join('\\n'));if(err)console.error(err.split('\\n').slice(0,10).join('\\n'));}}console.log(d)})\"",
+            "async": true,
+            "timeout": 30
+          }
+        ],
+        "description": "Run tsc --noEmit after editing TypeScript files to catch type errors early"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const p=i.tool_input?.file_path||'';const ns=i.tool_input?.new_string||i.tool_input?.content||'';if(/\\.(ts|tsx|js|jsx)$/.test(p)&&/console\\.log/.test(ns)){console.error('[Hook] console.log detected in '+p+' — remove before merging to main');}console.log(d)})\"",
+            "timeout": 5
+          }
+        ],
+        "description": "Warn about console.log statements in edited TypeScript/JavaScript files"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const cmd=i.tool_input?.command||'';const lines=cmd.split('\\n');const hasFlag=lines.some(l=>/^\\s*git\\s+(commit|push).*--no-verify/.test(l));if(hasFlag){console.error('[Hook] BLOCKED: --no-verify skips pre-commit hooks. Fix the underlying issue instead.');process.exit(2);}console.log(d)})\"",
+            "timeout": 5
+          }
+        ],
+        "description": "Block git --no-verify to prevent bypassing pre-commit hooks"
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const cmd=i.tool_input?.command||'';if(/git commit/.test(cmd)){const{execSync}=require('child_process');try{const diff=execSync('git diff --cached',{stdio:'pipe'}).toString();const secretPatterns=[/Q360_API_PASSWORD\\s*=\\s*[^$][^\\n]+/,/Q360_API_USERNAME\\s*=\\s*[^$][^\\n]+/,/GEMINI_API_KEY\\s*=\\s*[^$ci][^\\n]+/];const found=secretPatterns.filter(p=>p.test(diff));if(found.length>0){console.error('[Hook] BLOCKED: Potential credential in staged changes — check your diff');process.exit(2);}}catch(e){}}console.log(d)})\"",
+            "timeout": 10
+          }
+        ],
+        "description": "Block commits that may contain Q360 or Gemini credentials in staged files"
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const i=JSON.parse(d);const p=i.tool_input?.file_path||'';const sharedPaths=[/lib\\/(q360|types|constants)\\.ts$/,/app\\/api\\/q360\\//,/components\\/ui\\//];const isShared=sharedPaths.some(re=>re.test(p));if(isShared){console.error('[Hook] Editing shared layer: '+p);console.error('[Hook] Shared files affect all 3 teams — coordinate with team lead before merging');}console.log(d)})\"",
+            "timeout": 5
+          }
+        ],
+        "description": "Warn when editing shared layer files that affect all feature teams"
+      }
+    ]
+  }
+}
