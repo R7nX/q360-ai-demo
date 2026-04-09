@@ -79,6 +79,7 @@ describe("schema discovery", () => {
   });
 
   it("returns normalized discovery objects from live-style Q360 responses", async () => {
+    vi.stubEnv("USE_MOCK_DATA", "false");
     vi.stubEnv("Q360_BASE_URL", "https://example.test");
     vi.stubEnv("Q360_API_USER", "api-user");
     vi.stubEnv("Q360_API_PASSWORD", "api-password");
@@ -165,6 +166,7 @@ describe("schema discovery", () => {
   });
 
   it("caches schema discovery results and avoids a second HTTP request", async () => {
+    vi.stubEnv("USE_MOCK_DATA", "false");
     vi.stubEnv("Q360_BASE_URL", "https://example.test");
     vi.stubEnv("Q360_API_USER", "api-user");
     vi.stubEnv("Q360_API_PASSWORD", "api-password");
@@ -233,6 +235,7 @@ describe("schema discovery", () => {
   });
 
   it("returns a partial discovery summary when datasource access lookup fails", async () => {
+    vi.stubEnv("USE_MOCK_DATA", "false");
     vi.stubEnv("Q360_BASE_URL", "https://example.test");
     vi.stubEnv("Q360_API_USER", "api-user");
     vi.stubEnv("Q360_API_PASSWORD", "api-password");

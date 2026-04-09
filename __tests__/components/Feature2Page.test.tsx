@@ -56,6 +56,14 @@ function clickAutomation(name: RegExp | string) {
 // ── Deselect on automation type switch ────────────────────────────────────────
 
 describe("Feature2Page — record clears when automation type changes", () => {
+  it("defaults shared tool harness to an existing fallback dispatch ID", async () => {
+    mockFetch();
+    render(<Feature2Page />);
+
+    expect(screen.getByText("D-0009")).toBeInTheDocument();
+    expect(screen.queryByText("DEMO-002")).not.toBeInTheDocument();
+  });
+
   it("clears selected record when switching from service-closure to new-call-ack", async () => {
     mockFetch();
     render(<Feature2Page />);
