@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      USE_MOCK_DATA: "true"
 
     steps:
       - uses: actions/checkout@v6
