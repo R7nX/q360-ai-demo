@@ -126,13 +126,33 @@ optional_inputs:
 These skills are loaded into the agent's system prompt context when relevant (selected via vector search on the user's intent + skill descriptions). The agent treats them as authoritative runbooks.
 
 **B. RAG over scraped procedure docs**
-The remaining ~140 procedures we don't curate are scraped from `helpv24.q360.com`, chunked, embedded with Gemini's embedding model (cheap, already integrated), and stored in a local vector index (e.g. `@lancedb/lancedb` or just a JSON+brute-force search since the corpus is small). At runtime, the agent can retrieve relevant doc chunks for context when no curated skill matches. This is the discovery / fallback layer — useful for "how would I do X?" type questions even if the agent can't fully execute X.
+The remaining ~140 procedures we don't curate are scraped from `helpv24.q360.com`, chunked, embedded with Gemini's `text-embedding-004` (cheap, already integrated), and stored as a flat JSON artifact loaded into memory at boot. At runtime, the agent can retrieve relevant doc chunks for context when no curated skill matches. This is the discovery / fallback layer — useful for "how would I do X?" type questions even if the agent can't fully execute X.
+
+#### Sizing the corpus
+~150 procedures × ~few thousand words each → low single-digit MB of raw text. Chunked at ~500 tokens with heading-aware splits: ~1–3K chunks. At 768-dim Gemini embeddings: ~5–10 MB of vectors. This is small enough that the storage decision should optimize for **fewer moving parts on stage**, not for query latency.
+
+#### Storage decision: flat JSON + brute-force cosine
+
+| Option | Setup | Query latency | Notes |
+|---|---|---|---|
+| **Flat JSON, brute-force cosine** ✅ | ~0 | <50ms for 3K vectors | Ships with repo, no infra, works offline, one-file deploy |
+| SQLite + sqlite-vec | low | <20ms | File-based with proper indexing, but extension adds setup |
+| Homelab Postgres + pgvector | low if homelab is solid | <10ms | Best for hybrid BM25+vector, but a stage-time infra dep |
+| LanceDB / Chroma / Qdrant | medium | fast | Overkill for this corpus size |
+
+We commit to **flat JSON, brute-force**. Brute force is genuinely fast enough at 1–3K vectors that you can't feel it. Zero infra dependency means the demo survives a network hiccup on stage. Swapping to pgvector later is a one-day refactor if we ever need hybrid keyword+vector search.
+
+The tradeoff: no native BM25. If retrieval starts pulling wrong chunks because of vocabulary mismatch (agent searches "service ticket" but docs say "dispatch"), we revisit. Mitigation: include the procedure title and breadcrumb (`module > procedure > section`) in the embedded text so keyword overlap helps.
 
 ### Authoring workflow
-1. Crawl all procedure URLs under `/docs-inline/{module}/` to produce an index (one-time script in `scripts/scrape-procedures.ts`).
-2. Fetch each procedure page → markdown via Turndown or similar → save under `docs/procedures-raw/{module}/{slug}.md`.
-3. Build the embedding index (`scripts/build-procedure-index.ts`).
-4. For each demo workflow, hand-write the curated skill in `skills/{slug}.md` using the raw doc + Postman testing as source.
+1. **Inventory crawl** — `scripts/scrape-procedures.ts` enumerates every procedure URL under `/docs-inline/{module}/`. Output: `docs/procedures-raw/_inventory.json`.
+2. **Fetch + convert** — same script fetches each page, strips nav/chrome, converts HTML → markdown via Turndown, writes to `docs/procedures-raw/{module}/{slug}.md` with YAML frontmatter (url, module, title, scraped-at, content-hash). Idempotent: re-fetches only when content-hash changes. Rate-limited.
+3. **Build index** — `scripts/build-procedure-index.ts` walks raw markdown, splits by heading, embeds via Gemini, writes `lib/agent/knowledge/index.json` (`{ chunks: [{ id, text, embedding, metadata }] }`).
+4. **Runtime loader** — `lib/agent/knowledge/search.ts` loads the JSON once at boot and exposes `searchProcedures(query, k)`. ~30 lines.
+5. **Curated skills** — for each demo workflow, hand-write `skills/{slug}.md` using the raw doc + Postman testing as source.
+
+### Open access question (verify before week 1)
+Is `helpv24.q360.com/docs-inline/` reachable anonymously, or behind auth? Determines whether the crawler needs a cookie jar / login flow. Test on one URL before committing to crawler design.
 
 ---
 
@@ -203,7 +223,7 @@ After comparing with Gemini function calling and n8n:
 - Tools registered from `lib/agent/tools/*.ts` (one file per tool group).
 - Skills loaded from `skills/*.md` at boot, indexed by description for relevance ranking.
 - System prompt: role (Q360 operations assistant), guardrails (always confirm destructive ops, never invent IDs, prefer asking over guessing), tool inventory summary.
-- Conversation state persisted per session (in-memory for v1; Postgres if we get there).
+- Operational state lives in the **homelab Postgres** (the same instance Feature 1 already uses): audit log of every tool call, run transcripts (so a workflow can be paused / resumed / reviewed after the fact), and the dashboard cards cache. The knowledge corpus does *not* live there — it's the static JSON artifact (§4). Keeping operational state in Postgres and knowledge as a build artifact gives us one writable database (operational) and one immutable artifact (knowledge), each in the right place.
 
 ### Observability
 - Every tool call logged: tool name, inputs (redacted secrets), outputs, duration, status.
@@ -344,7 +364,11 @@ lib/
       contracts.ts
       …
     skills.ts               # skill loader + ranker
-    audit.ts                # tool-call logger
+    knowledge/
+      index.json            # built artifact: chunks + embeddings (gitignored or committed; TBD)
+      search.ts             # loader + brute-force cosine search
+    audit.ts                # tool-call logger (writes to homelab Postgres)
+    runs.ts                 # run state / transcript persistence (homelab Postgres)
 skills/                     # curated procedure runbooks (markdown)
   create-service-call.md
   renew-contracts.md
